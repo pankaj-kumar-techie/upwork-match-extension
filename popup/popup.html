@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Match Intel</title>
+    <link rel="stylesheet" href="popup.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo-icon">MI</div>
+                <h1>Match <span>Intel</span></h1>
+            </div>
+            <nav class="tabs">
+                <button id="tab-settings" class="tab-btn active">Intel Config</button>
+                <button id="tab-tracker" class="tab-btn">Opportunity Tracker</button>
+            </nav>
+        </header>
+
+        <main id="settings-view" class="view">
+            <div class="view-content scrollable">
+                <div id="quick-start-notice" class="onboarding-card">
+                    <h3>Intelligent Onboarding</h3>
+                    <p>Sync your profile to calibrate the AI with your real-world expertise.</p>
+                    <button id="open-profile-btn" class="primary-btn pulse">Begin Deep Sync</button>
+                </div>
+
+                <section class="config-section">
+                    <div class="section-header">
+                        <span class="dot"></span>
+                        <h2>Identity & Work Profile</h2>
+                    </div>
+                    <div class="input-group">
+                        <label>Public Profile URL</label>
+                        <input type="text" id="myProfileUrl" placeholder="https://www.upwork.com/freelancers/~...">
+                        <p class="help-text">Used for deep skill extraction and profile monitoring.</p>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <div class="section-header">
+                        <span class="dot yellow"></span>
+                        <h2>Economic Thresholds</h2>
+                    </div>
+                    <div class="grid-row">
+                        <div class="input-group">
+                            <label>$/hr Min</label>
+                            <input type="number" id="hourlyRateMin" placeholder="30">
+                        </div>
+                        <div class="input-group">
+                            <label>$/hr Max</label>
+                            <input type="number" id="hourlyRateMax" placeholder="100">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Fixed Budget Floor ($)</label>
+                        <input type="number" id="budgetMin" placeholder="500">
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <div class="section-header">
+                        <span class="dot purple"></span>
+                        <h2>Intel Keywords & Geography</h2>
+                    </div>
+                    <div class="input-group">
+                        <label>Target Expertise (comma separated)</label>
+                        <textarea id="keywords" rows="3" placeholder="React, Node.js, AI Systems..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Preferred Regions</label>
+                        <input type="text" id="locations" placeholder="USA, United Kingdom, European Union">
+                    </div>
+                    <div class="input-group">
+                        <label>Red Flag Locations (Auto-Penalty)</label>
+                        <input type="text" id="blacklistedLocations" placeholder="Pakistan, India, Bangladesh (Exclude from high-alpha)">
+                        <p class="help-text">Jobs from these regions will get a -25 point penalty.</p>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <div class="section-header">
+                        <span class="dot blue"></span>
+                        <h2>Automation & Alpha Alerts</h2>
+                    </div>
+                    <div class="input-group">
+                        <label>Alpha Threshold (%)</label>
+                        <input type="number" id="minScoreToNotify" min="0" max="100" placeholder="85">
+                        <p class="help-text">Threshold for auto-saving and notifications.</p>
+                    </div>
+                    <div class="input-group checkbox-row">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="autoSaveEnabled">
+                            <label for="autoSaveEnabled">Auto-Save matches above threshold</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Auto-Reload Feed (Minutes)</label>
+                        <input type="number" id="reloadInterval" min="0" max="60" placeholder="0 = Disabled">
+                        <p class="help-text">Refreshes the page to find new jobs.</p>
+                    </div>
+                    <div class="input-group">
+                        <label>Webhook Hub (Discord/Telegram)</label>
+                        <input type="text" id="webhookUrl" placeholder="https://discord.com/api/webhooks/...">
+                    </div>
+                </section>
+            </div>
+            <footer class="view-footer">
+                <button id="save-settings" class="primary-btn full-width">Deploy Configurations</button>
+            </footer>
+        </main>
+
+        <main id="tracker-view" class="view" style="display: none;">
+            <div id="saved-jobs-list" class="jobs-list scrollable">
+                <div class="empty-state">
+                    <span class="icon">🔍</span>
+                    <p>No high-alpha opportunities tracked yet.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
