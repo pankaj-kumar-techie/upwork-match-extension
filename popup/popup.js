@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('minScoreToNotify').value = settings.minScoreToNotify || 85;
     document.getElementById('reloadInterval').value = settings.reloadInterval || 0;
     document.getElementById('autoSaveEnabled').checked = settings.autoSaveEnabled !== false;
+    document.getElementById('aiModel').value = settings.aiModel || 'none';
+    document.getElementById('aiKey').value = settings.aiKey || '';
 
     // Begin Sync (Redirect to Profile)
     openProfileBtn.onclick = () => {
@@ -69,7 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             webhookUrl: document.getElementById('webhookUrl').value.trim(),
             minScoreToNotify: parseInt(document.getElementById('minScoreToNotify').value) || 85,
             reloadInterval: parseInt(document.getElementById('reloadInterval').value) || 0,
-            autoSaveEnabled: document.getElementById('autoSaveEnabled').checked
+            autoSaveEnabled: document.getElementById('autoSaveEnabled').checked,
+            aiModel: document.getElementById('aiModel').value,
+            aiKey: document.getElementById('aiKey').value.trim()
         };
 
         // Preserve system-only settings

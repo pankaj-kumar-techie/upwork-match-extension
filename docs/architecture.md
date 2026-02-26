@@ -1,52 +1,69 @@
 # 🏗️ MNC-Grade Architecture: Upwork Match Intelligence
 
-Upwork Match Intelligence is a decentralized AI layer designed for high-performance lead qualification. It follows the **"Observe-Analyze-Inject"** pattern, ensuring low latency and maximum privacy.
+Upwork Match Intelligence is a decentralized AI layer designed for high-performance lead qualification. It follows a state-of-the-art **Observability and Intelligence Engine** pattern.
+
+## 📊 High-Level Component Architecure
+
+```mermaid
+graph TD
+    A[Upwork DOM] -->|MutationObserver| B(Upwork Engine)
+    B -->|Extract Job Card| C{Job Scorer}
+    B -->|Lazy Fetch| D[Deep Intel Scraper]
+    D -->|Modal/Detail Scan| E(Client Dossier)
+    E -->|Backfill Stats| B
+
+    SubGraph1[Intelligence Pool]
+    F[Freelancer Profile] -->|Deep Sync| G((Settings Storage))
+    G -->|Config Hooks| C
+
+    C -->|Weighted Scoring| H[Strategic Panel Overlay]
+    H -->|AI Alpha Advice| I[User Action]
+
+    I -->|Save Job| J[(Opportunity Tracker)]
+    B -->|High Match| K[Background Hub]
+    K -->|Webhook| L[Discord/Telegram]
+```
 
 ## 1. 🔍 The Intelligence Engine (`content.js`)
 
-The engine is the primary processor. It utilizes a multi-threaded observation strategy via `MutationObserver` to process job tiles as they enter the viewport.
+The engine is the primary processor. It utilizes a multi-layered observation strategy to ensure zero-latency injection of strategic data.
 
-### Advanced Data Extraction (V3.0)
+### 💉 Injection Pipeline
 
-The engine now performs "Deep Scraping" on job tiles, extracting:
+1. **DOM Hooking**: `MutationObserver` detects new job tiles.
+2. **First-Pass Extraction**: Scrapes immediate data (Title, Budget, Hire Rate).
+3. **Lazy Enrichment**: Checks `chrome.storage.local` for "Gold Intelligence" (Activity stats, Client names) cached from previous modal opens.
+4. **UI Injection**: Calculates score and advice, then transforms the job card with a **Strategic Panel**.
 
-- **Financial Vectors**: Min/Max hourly rates, fixed budget floors.
-- **Client Metadata**: Payment status, total USD spend, historical hire rate (%).
-- **Semantic Tags**: Explicit job skills and hidden description keywords.
+## 2. 🌀 The Scoring Core (`JobScorer`)
 
-### Precision Scoring Logic
+Implements a weighted decision matrix with the following intelligence vectors:
 
-The `JobScorer` class implements a weighted decision matrix:
+| Vector                | Weight      | Logic                                                           |
+| :-------------------- | :---------- | :-------------------------------------------------------------- |
+| **Trust Filter**      | -20% / +10% | Penalizes unverified payments; rewards verification.            |
+| **Semantic Match**    | +40% Max    | NLP-based overlap between Profile Keywords and Job Description. |
+| **Price Alignment**   | +15% Max    | Compares job rates against User's economic floor.               |
+| **Client Conversion** | +15% Max    | Scores hire rates and historical USD spend.                     |
+| **Market Context**    | +10% Max    | Geographic matching with preferred markets.                     |
 
-- **Hard Filters (-20% to -15%)**: Immediate penalties for unverified payment methods or underpriced jobs.
-- **Expertise Match (+40%)**: Non-linear matching scale for profile vs. job skill alignment.
-- **Client Maturity (+15%)**: Rewards for established spenders with high conversion rates.
+## 3. ⚡ Profile Synchronization (Intel Pool)
 
-## 2. 🌀 Profile Intelligence (The Core)
+The engine treats the freelancer's profile as the **Semantic Source of Truth**.
 
-The extension treats the freelancer's profile as the "Source of Truth".
+- **Adaptive Selectors**: Supports both modern Nuxt-based and legacy Upwork layouts.
+- **Skill Extraction**: Automatically parses skills from the profile title, bio, and skill tags to build the matching pool.
 
-- **Dynamic Onboarding**: Detects the user's profile and provides a one-click manual/automatic sync.
-- **Intel Pool**: Extracted skills, titles, and work history titles are cached in `chrome.storage.sync` to drive the scoring logic globally across the platform.
+## 4. 🛰️ The Background Automation Hub (`background.js`)
 
-## 3. 🎨 Premium UI/UX Layer (`content.css` & `popup.html`)
+Acts as an asynchronous bridge for long-running processes:
 
-Designed for an MNC-grade feel:
+- **Proxy Fetching**: Fetches job detail pages in the background to extract names and activity without disrupting the user.
+- **Remote Webhooks**: Delivers high-alpha alerts to external platforms.
+- **Cross-Tab State**: Ensures settings and intelligence are consistent across all open Upwork tabs.
 
-- **Glassmorphism Overlay**: Minimalist background blurs and shadows.
-- **Multi-State Feedback**: Visual cues for "Analyzing", "Match Found", and "Success" states.
-- **Atomic Components**: Reusable CSS variables for consistent branding.
+## 🛠️ Performance Architecture
 
-## 4. 🛰️ The Automation Hub (`background.js`)
-
-The background worker acts as the "Bridge":
-
-- **Webhooks**: Formats and delivers high-alpha leads to Discord/Telegram.
-- **System Alerts**: Native OS notifications for jobs exceeding the user's "Alpha Threshold" (>85%).
-- **Auto-Persistence**: Zero-click saving of the best opportunities to the local database.
-
-## 🛠️ Performance Benchmarks
-
-- **Injection Latency**: <120ms per 10 job tiles.
-- **Memory Footprint**: <15MB overhead.
-- **Sync Velocity**: Profile deep-sync completed in <2 seconds.
+- **Debounced Processing**: Cycle runs are debounced (600ms) to prevent CPU spikes.
+- **Lazy Loading**: Intelligence is fetched only when a job tile enters the viewport or a modal is opened.
+- **Resilient Context**: Uses heartbeat checks to handle extension reloads gracefully.

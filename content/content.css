@@ -48,13 +48,23 @@
 }
 
 .mi-advice-strip {
-    background: #f8fafc;
-    padding: 8px 15px;
+    background: #fdfdfd;
+    padding: 10px 15px 5px 15px;
     font-size: 11px;
-    font-weight: 700;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+    font-weight: 800;
+    color: #1e293b;
     letter-spacing: -0.01em;
+    border-left: 3px solid #6366f1;
+}
+
+.mi-match-rationale {
+    padding: 0 15px 10px 15px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .mi-dossier-grid {
@@ -136,22 +146,59 @@
     100% { transform: scale(1); }
 }
 
-.mi-save-action {
+.mi-actions-container {
     position: absolute;
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mi-save-action, .mi-ai-action {
     background: transparent;
     border: none;
     color: #cbd5e1;
     cursor: pointer;
     transition: all 0.2s;
-    padding: 8px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.mi-save-action:hover {
-    color: #10b981;
-    transform: translateY(-50%) scale(1.2);
+.mi-save-action:hover { color: #10b981; transform: scale(1.2); }
+.mi-ai-action:hover { color: #6366f1; transform: scale(1.2); }
+
+.mi-ai-action.mi-loading {
+    animation: rotateSlow 2s linear infinite;
+    color: #6366f1;
+    cursor: wait;
+}
+
+@keyframes rotateSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.mi-ai-badge {
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 800;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.mi-ai-hook {
+    padding: 10px 15px;
+    background: #fdf2ff;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #581c87;
+    border-top: 1px solid #fae8ff;
+    border-bottom: 1px solid #fae8ff;
+    font-style: italic;
 }
 
 /* High Match Highlight */
@@ -196,11 +243,12 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .mi-strategic-panel { background: #1e293b; border-color: #334155; }
-    .mi-advice-strip { background: #0f172a; color: #94a3b8; border-color: #1e293b; }
+    .mi-advice-strip { background: #0f172a; color: #f1f5f9; border-color: #1e293b; }
+    .mi-match-rationale { color: #64748b; border-color: #334155; }
     .mi-dossier-item .value { color: #f1f5f9; }
     .mi-intel-footer { background: #1e293b; }
     .mi-chip { background: #334155; color: #94a3b8; border-color: #475569; }
+    .mi-ai-hook { background: #3b0764; color: #e9d5ff; border-color: #581c87; }
 }

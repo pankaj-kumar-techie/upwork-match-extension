@@ -1,33 +1,37 @@
-# 🚀 Product Roadmap: Upwork Match Intelligence
+# 🚀 Strategic Product Roadmap: Upwork Match Intelligence
 
-To move from "MNC Grade" to "Market Dominant", here are the suggested future modules for this extension:
+Our mission is to evolve from a "Job Scorer" to a **Full-Cycle Alpha Agent**. This roadmap highlights the primary integration phases.
 
-## 1. ✍️ AI-Powered Cover Letter Architect
+## 🟢 PHASE 1: Data Mastery (Current)
 
-- **Concept**: Use the `JobData` (Title, Description, Skills) and `ProfileData` to generate a 3-paragraph tailored cover letter instantly.
-- **Value**: Reduces application time from 10 minutes to 30 seconds.
+- ✅ **Deep Scraper v3**: Background activity and client dossiers.
+- ✅ **Strategic Panel**: High-density UI for job cards.
+- ✅ **Profile Sync**: One-click intelligence calibration.
+- ✅ **Auto-Reload**: Autonomous feed refreshing.
 
-## 2. 📊 Competition Intelligence Overlay
+## 🟡 PHASE 2: Cognitive Integration (NEXT)
 
-- **Concept**: Extract the "Number of Proposals" from the job detail page and overlay a "Velocity" indicator.
-- **Value**: Flags if a job is getting too crowded (e.g., "50+ proposals in 10 mins") or if it's a "Blue Ocean" opportunity.
+- 🏗️ **LLM Model Support**: Direct integration with Gemini and OpenAI for job analysis.
+- 🏗️ **Proposal Architect**: Auto-drafting cover letters using job-specific "Alpha Data".
+- 🏗️ **Smart Summarizer**: Bullet-point reduction of long, messy job descriptions.
 
-## 3. 🧠 Success Pattern Analytics
+## 🔵 PHASE 3: Workflow Automation
 
-- **Concept**: A new tab in the popup that analyzes your _Successful_ versus _Ignored_ applications (manually tagged).
-- **Value**: The AI starts learning exactly which job sub-niches actually convert for _you_ specifically.
+- **Auto-Bid Pilot**: Pre-fill application forms based on match score.
+- **Client Intent Analyzer**: Sentiment analysis on client reviews to detect "Micro-Managers" vs "High-Trust" clients.
+- **Velocity Tracker**: Real-time proposal speed analytics to detect "Hot Posts".
 
-## 4. 🌐 Real-Time Rate Arbitrage
+## 🔴 PHASE 4: Professional Network
 
-- **Concept**: Compares the client's average hourly rate paid versus the job's posted range.
-- **Value**: Alerts you if a client has a history of paying $50/hr even if they posted a $20/hr job.
+- **Collaboration Mode**: Shared intelligence pool for agencies.
+- **Contract Risk Scanner**: Scans job posts for predatory legal terms or unrealistic scope.
 
-## 5. 🎙️ High-Alpha Voice Alerts
+---
 
-- **Concept**: A text-to-speech engine that announces "High Match: AI System Architect found. $2000 budget."
-- **Value**: Allows you to be the first person to apply without staring at the screen all day.
+## 🛠️ Upcoming: AI Intelligence Module
 
-## 6. 📂 Specialized Profile Switching
+We are currently building the foundation for Phase 2. The next update will include:
 
-- **Concept**: Detect which Specialized Profile you are on (e.g., "ML Engineer" vs "Web Dev") and switch the Intel Scorer settings automatically.
-- **Value**: Precision scoring for freelancers with multiple skill sets.
+1. **Model Selection**: Choose between `Gemini-1.5-Pro`, `GPT-4o`, or `Local LLM`.
+2. **Key Store**: Secure local storage for API keys.
+3. **Context Injection**: Feed job intel + your profile bio directly into the model for "Winning Logic" generation.

@@ -12,8 +12,90 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(html => sendResponse({ html }))
       .catch(error => sendResponse({ error: error.message }));
     return true; // Keep channel open for async response
+  } else if (message.type === 'AI_GET_ALPHA_INSIGHT') {
+    handleAIRequest(message.jobData, message.profileSummary)
+      .then(insight => sendResponse({ insight }))
+      .catch(error => sendResponse({ error: error.message }));
+    return true;
   }
 });
+
+async function handleAIRequest(jobData, profileSummary) {
+    const { settings = {} } = await chrome.storage.sync.get('settings');
+    const model = settings.aiModel;
+    const apiKey = settings.aiKey;
+
+    if (!model || model === 'none' || !apiKey) {
+        throw new Error('AI Model or API Key not configured in popup.');
+    }
+
+    const systemPrompt = `You are a high-level MNC Talent Recruiter and Project Manager for a top-tier freelance agency. 
+Your goal is to analyze an Upwork job post against a freelancer's profile to determine if it's a "High Alpha" (highly profitable and perfectly aligned) opportunity.
+
+FREELANCER PROFILE:
+- Title: ${profileSummary?.title || 'Not Synced'}
+- Target Skills: ${profileSummary?.skills?.join(', ') || 'Not Synced'}
+- Hourly Rate: $${profileSummary?.rate || '0'}/hr
+
+JOB DATA:
+- Title: ${jobData.title}
+- Description: ${jobData.description}
+- Rate/Budget: ${jobData.type === 'Hourly' ? `$${jobData.rateMin}-$${jobData.rateMax}/hr` : `$${jobData.budget}`}
+- Activity: ${jobData.interviewing} interviewing, ${jobData.invites} invites.
+
+SCORING CRITERIA:
+1. Technical Overlap: Do the specific tools/requirements in the job description match the freelancer's profile?
+2. Profitability: Is the budget/rate appropriate for the freelancer's seniority?
+3. Bid Risk: Is there too much competition (many interviews/invites)?
+
+OUTPUT FORMAT (JSON Only):
+{
+  "revisedScore": number (0-100),
+  "alphaInsight": "1-sentence strategic advice",
+  "pitchHook": "A personalized first sentence for the cover letter that proves expertise",
+  "redFlags": ["list of items or empty"]
+}`;
+
+    if (model === 'gemini') {
+        return callGemini(apiKey, systemPrompt);
+    } else if (model === 'openai') {
+        return callOpenAI(apiKey, systemPrompt);
+    }
+}
+
+async function callGemini(key, prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt + "\nRespond ONLY with a valid JSON object." }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        })
+    });
+    const data = await response.json();
+    return JSON.parse(data.candidates[0].content.parts[0].text);
+}
+
+async function callOpenAI(key, prompt) {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: 'You are a helpful assistant that responds in JSON.' },
+                { role: 'user', content: prompt }
+            ],
+            response_format: { type: "json_object" }
+        })
+    });
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+}
 
 // Handle notification click to open the job link
 chrome.notifications.onClicked.addListener((notificationId) => {

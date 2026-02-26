@@ -1,35 +1,51 @@
-# 📄 Production & Deployment Guide
+# 📄 Production & Strategic Deployment Guide
 
-This guide details the steps to deploy and maintain the Upwork Match Intelligence extension in a professional environment.
+This guide ensures the **Upwork Match Intelligence** system is deployed with MNC-grade precision and reliability.
 
-## 📦 Deployment Steps
+## 📦 Deployment Workflow
 
-1. **Source Control**: Ensure all files in `content/`, `popup/`, and `docs/` are committed.
-2. **Unpacked Loading**:
-   - Open Chrome `chrome://extensions/`.
-   - Enable **Developer Mode**.
-   - Click **Load Unpacked** and select the root directory of this extension.
-3. **Intel Calibration**:
-   - Open your Upwork Profile.
-   - Click the green **"Sync MY Intelligence"** button.
-   - Verify that your keywords and rates appear correctly in the extension popup.
+```mermaid
+graph LR
+    A[Install Extension] --> B[Navigate to Upwork]
+    B --> C[Open Your Profile]
+    C --> D[Click 'Sync MY Intelligence']
+    D --> E[Calibrate Thresholds in Popup]
+    E --> F[Enable Auto-Reload / Webhooks]
+    F --> G[Start Strategic Monitoring]
+```
 
-## ⚙️ Configuration Reference (Intel Pool)
+### 1. Installation
 
-| Key                | Description                                 | Format           |
-| :----------------- | :------------------------------------------ | :--------------- |
-| `keywords`         | The semantic pool used for matching.        | Array of Strings |
-| `hourlyRateMin`    | Your preferred floor rate.                  | Integer          |
-| `minScoreToNotify` | Threshold for "Alpha Alerts" (Default: 85). | Integer (0-100)  |
-| `webhookUrl`       | Destination for remote match delivery.      | URL String       |
+- Open Chrome and navigate to `chrome://extensions/`.
+- Enable **Developer Mode**.
+- Click **Load Unpacked** and select the extension root directory.
 
-## 🚀 Advanced Best Practices
+### 2. Semantic Calibration (Critical)
 
-- **Regular Sync**: We recommend re-syncing your profile every 14 days or whenever you update your specialized profile skills to keep the "Intel Pool" fresh.
-- **Negative Filtering**: If you see too many irrelevant jobs, add the specific keywords you want to avoid into your "Intel Pool" and the engine will naturally de-prioritize them (future update will include explicit negative keywords).
-- **Webhook optimization**: Use Discord "Embeds" or Telegram "MarkdownV2" (handled automatically by our background logic) for the cleanest remote leads.
+The engine is only as smart as the data it has.
 
-## 🔍 Troubleshooting
+- **Profile Sync**: Go to your freelancer profile page. The "Sync MY Intelligence" button will appear. Clicking this parses your entire career history into the **Intel Pool**.
+- **Keyword Tuning**: Open the extension popup. Review the extracted keywords. Add any "High-Alpha" technical terms (e.g., `Generative AI`, `System Architecture`) that represent your highest-paying work.
 
-- **Badges not appearing**: Check if Upwork has updated their DOM class names. Update `SELECTORS` in `content.js` to match the latest `data-test` attributes.
-- **Sync failing**: Ensure you are on a "Public" profile view, not an "Edit" view.
+## 🛠️ Configuration Strategy
+
+| Strategic Setting    | Best Practice                                                                        |
+| :------------------- | :----------------------------------------------------------------------------------- |
+| **Alpha Threshold**  | Set to **85%** for premium filtering; **75%** for volume discovery.                  |
+| **Auto-Reload**      | Set to **3-5 minutes** to ensure you are among the first 10 applicants.              |
+| **Market Filtering** | Use the "Red Flag" list to block regions with historically low pay or high friction. |
+| **Webhook Hub**      | Connect a Discord channel to see jobs even when you're away from your desk.          |
+
+## 🚀 Performance Benchmarks
+
+To maintain a premium experience, the engine adheres to these constraints:
+
+- **DOM Stability**: Uses non-destructive injection to avoid breaking Upwork's native UI.
+- **API Safety**: Does not hit Upwork APIs directly; uses human-simulated scraping to avoid detection.
+- **Memory Optimization**: Auto-cleans job cache every 3 hours to maintain low memory usage.
+
+## 🔍 Maintenance & Monitoring
+
+- **Updates**: When Upwork changes their UI, check the `docs/architecture.md` for updated selector strategies.
+- **Log Inspection**: Open the console (`F12`) on Upwork to see the `[MatchIntel]` diagnostic logs.
+- **Intel Refresh**: Re-sync your profile whenever you add a new major project or skill to your Upwork profile.

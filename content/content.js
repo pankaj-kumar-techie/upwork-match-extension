@@ -158,36 +158,50 @@ class JobScorer {
       highCompetition: jobData.proposals === '50+',
       freelancerMentioned: jobData.freelancerMentioned,
       paymentVerified: jobData.paymentVerified,
-      advice: this.generateAlphaAdvice(finalScore, jobData, locationMatched)
+      advice: this.generateAlphaAdvice(finalScore, jobData, locationMatched, Array.from(uniqueMatches))
     };
   }
 
-  generateAlphaAdvice(score, jobData, locMatched) {
+  generateAlphaAdvice(score, jobData, locMatched, matches) {
     const interviewing = parseInt(jobData.interviewing || 0);
     const invites = parseInt(jobData.invites || 0);
+    const hasSync = this.settings.profileSummary?.title;
     
-    if (jobData.freelancerMentioned) return "💎 COLLABORATION ALERT: Client has worked with you or similar profiles before. Priority bid.";
-    
-    if (interviewing > 5) return "⚠️ SATURATION WARNING: Client is already interviewing 5+ people. High risk of wasted effort.";
-    
-    if (invites > 10 && interviewing < 2) return "🚩 GHOST JOB? Client sent 10+ invites but is not interviewing. Likely inactive.";
-    
-    if (score >= 90) {
-        if (invites < 3) return "🔥 ALPHA SIGNAL: Prime opportunity. Low competition + High profile alignment. Bid now.";
-        return "⚡ HIGH ALPHA: Solid alignment and trust. Competitive bid recommended.";
+    let message = "📈 NEUTRAL ALPHA: Moderate alignment. Review details manually.";
+    let rationale = "";
+
+    // 1. Rationale Building
+    const expertiseStr = matches.length > 5 ? "Strong" : (matches.length > 2 ? "Moderate" : "Weak");
+    const budgetStr = (jobData.type === 'Hourly' && jobData.rateMin >= this.settings.hourlyRateMin) || 
+                       (jobData.type === 'Fixed-price' && jobData.budget >= this.settings.budgetMin) ? "High" : "Low";
+    rationale = `Expertise: ${expertiseStr} | Financial: ${budgetStr} Fit | Trust: ${jobData.paymentVerified ? 'Verified' : 'Low'}`;
+
+    // 2. Message Logic
+    if (jobData.freelancerMentioned) {
+        message = "💎 COLLABORATION ALERT: Client has worked with you or similar profiles before. Priority bid.";
+    } else if (interviewing > 5) {
+        message = "⚠️ SATURATION WARNING: Client is already interviewing 5+ people. High risk of wasted effort.";
+    } else if (invites > 10 && interviewing < 2) {
+        message = "🚩 GHOST JOB? Client sent 10+ invites but is not interviewing. Likely inactive.";
+    } else if (score >= 90) {
+        message = invites < 3 ? "🔥 ALPHA SIGNAL: Prime opportunity. Low competition + High profile alignment. Bid now." : "⚡ HIGH ALPHA: Solid alignment and trust. Competitive bid recommended.";
+    } else if (jobData.proposals === '50+') {
+        message = "⚠️ FRICTION ALERT: Over-saturated (50+ proposals). Skip unless you are a 100% match.";
+    } else if (!jobData.paymentVerified) {
+        message = "🛑 TRUST WARNING: Payment unverified. High risk of project abandonment.";
+    } else if (jobData.hireRate < 30 && jobData.hireRate > 0) {
+        message = "⚠️ LOW HIRE RATE: Client rarely hires (<30%). Potential time-waster.";
+    } else if (score < 45) {
+        message = "📉 LOW YIELD: Poor economic or skill alignment. Recommended skip.";
+    } else if (locMatched && score > 70) {
+        message = "📍 MARKET ADVANTAGE: Region match + Solid Score. Local domain expertise advantage.";
     }
-    
-    if (jobData.proposals === '50+') return "⚠️ FRICTION ALERT: Over-saturated (50+ proposals). Skip unless you are a 100% match.";
-    
-    if (!jobData.paymentVerified) return "🛑 TRUST WARNING: Payment unverified. High risk of project abandonment.";
-    
-    if (jobData.hireRate < 30 && jobData.hireRate > 0) return "⚠️ LOW HIRE RATE: Client rarely hires (<30%). Potential time-waster.";
-    
-    if (score < 45) return "📉 LOW YIELD: Poor economic or skill alignment. Recommended skip.";
-    
-    if (locMatched && score > 70) return "📍 MARKET ADVANTAGE: Region match + Solid Score. Local domain expertise advantage.";
-    
-    return "📈 NEUTRAL ALPHA: Moderate alignment. Review details manually.";
+
+    if (hasSync && score > 80) {
+        message = `✨ MATCH DETECTED for "${this.settings.profileSummary.title}": ` + message.split(': ')[1];
+    }
+
+    return { message, rationale };
   }
 }
 
@@ -646,7 +660,8 @@ class UpworkEngine {
         </div>
         
         <div class="mi-panel-content">
-          <div class="mi-advice-strip">${result.advice}</div>
+          <div class="mi-advice-strip">${result.advice.message}</div>
+          <div class="mi-match-rationale">${result.advice.rationale}</div>
           
           <div class="mi-dossier-grid">
             <div class="mi-dossier-item">
@@ -678,9 +693,14 @@ class UpworkEngine {
           </div>
         </div>
 
-        <button class="mi-save-action" title="Track Opportunity">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z" /></svg>
-        </button>
+        <div class="mi-actions-container">
+            <button class="mi-ai-action" title="AI Deep Dive">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" /></svg>
+            </button>
+            <button class="mi-save-action" title="Track Opportunity">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z" /></svg>
+            </button>
+        </div>
       </div>
     `;
 
@@ -689,6 +709,11 @@ class UpworkEngine {
       this.saveJob(jobData);
       e.currentTarget.style.color = '#10b981';
       e.currentTarget.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>';
+    };
+
+    badge.querySelector('.mi-ai-action').onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        this.triggerAIInsight(tile, jobData);
     };
 
     tile.prepend(badge);
@@ -724,6 +749,57 @@ class UpworkEngine {
           return `SINCE ${year}`;
       }
       return jobData.clientSpend !== '$0' ? 'ESTABLISHED' : 'NEW';
+  }
+
+  async triggerAIInsight(tile, jobData) {
+      const btn = tile.querySelector('.mi-ai-action');
+      const alphaSidebar = tile.querySelector('.mi-panel-sidebar');
+      const scoreCircle = tile.querySelector('.mi-score-circle');
+      const adviceStrip = tile.querySelector('.mi-advice-strip');
+
+      if (btn.classList.contains('mi-loading')) return;
+
+      btn.classList.add('mi-loading');
+      adviceStrip.innerHTML = '<span class="mi-spinner"></span> Consultant is analyzing job depth...';
+      
+      try {
+          const { settings = {} } = await chrome.storage.sync.get('settings');
+          const response = await chrome.runtime.sendMessage({
+              type: 'AI_GET_ALPHA_INSIGHT',
+              jobData,
+              profileSummary: {
+                  title: settings.profileSummary?.title,
+                  skills: settings.keywords, // Use keywords as the active skill set
+                  rate: settings.profileSummary?.rate || settings.hourlyRateMin
+              }
+          });
+
+          const insight = response.insight;
+          if (insight) {
+              // Update UI with AI precision
+              scoreCircle.innerHTML = `${insight.revisedScore}%`;
+              adviceStrip.innerHTML = `<span class="mi-ai-badge">AI INSIGHT</span> ${insight.alphaInsight}`;
+              
+              // Add Pitch Hook section
+              const content = tile.querySelector('.mi-panel-content');
+              let hookSection = content.querySelector('.mi-ai-hook');
+              if (!hookSection) {
+                  hookSection = document.createElement('div');
+                  hookSection.className = 'mi-ai-hook';
+                  content.insertBefore(hookSection, content.querySelector('.mi-intel-footer'));
+              }
+              hookSection.innerHTML = `<strong>Alpha Pitch:</strong> "${insight.pitchHook}"`;
+
+              // Visual update
+              alphaSidebar.style.background = insight.revisedScore >= 80 ? '#059669' : (insight.revisedScore >= 50 ? '#d97706' : '#dc2626');
+              btn.style.color = '#10b981';
+          }
+      } catch (e) {
+          adviceStrip.innerHTML = '❌ AI Engine Offline. Check settings.';
+          log('AI Insight Failed', e);
+      } finally {
+          btn.classList.remove('mi-loading');
+      }
   }
 }
 

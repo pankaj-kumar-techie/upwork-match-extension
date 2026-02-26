@@ -108,6 +108,26 @@
                         <input type="text" id="webhookUrl" placeholder="https://discord.com/api/webhooks/...">
                     </div>
                 </section>
+
+                <section class="config-section">
+                    <div class="section-header">
+                        <span class="dot green"></span>
+                        <h2>AI Intelligence (LLM Configuration)</h2>
+                    </div>
+                    <div class="input-group">
+                        <label>Primary Engine</label>
+                        <select id="aiModel" class="premium-select">
+                            <option value="none">Disabled (Calculation Only)</option>
+                            <option value="gemini">Google Gemini (Highly Recommended)</option>
+                            <option value="openai">OpenAI ChatGPT</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>API Access Key</label>
+                        <input type="password" id="aiKey" placeholder="sk-...">
+                        <p class="help-text">Keys are stored locally in your browser sync storage.</p>
+                    </div>
+                </section>
             </div>
             <footer class="view-footer">
                 <button id="save-settings" class="primary-btn full-width">Deploy Configurations</button>

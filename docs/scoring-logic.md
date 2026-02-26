@@ -94,13 +94,28 @@ The algorithm starts at a **Base Confidence Score of 35%**. It then applies the 
 - **Deep Context Recognition**: If the client has worked with you before (detected via client feedback scraping) or has worked with freelancers similar to you, the engine applies a **+20% Success Multiplier**.
 - **The "God View" Reveal**: When you open a job modal, the engine deep-scans for the client's name and activity stats (Interviewing/Invites) and syncs this back to your main feed.
 
+## 🧠 The Cognitive AI Layer (LLM Override)
+
+Beyond the heuristic scoring, users can trigger a **Deep AI Insight**. This action passes the job's semantic data and the user's "Intel Pool" to a chosen LLM (Gemini-1.5-Pro or GPT-4o).
+
+### 🤖 Prompt Engineering Strategies
+
+The AI is instructed with a **High-Level Recruiter Persona**, focusing on:
+
+- **Technical Nuance**: Moving beyond string-matching to understand if a project's technical stack truly aligns with the user's seniority.
+- **Risk Mitigation**: Analyzing client activity stats (Interviews/Invites) to detect "Ghost Jobs" or hiring fatigue.
+- **Alpha Pitching**: Generating a high-conversion "First Sentence" (Pitch Hook) tailored to the specific job nuances.
+
+### 🔄 Score Revision Logic
+
+When triggered, the AI provides a **Revised Alpha Score** that overrides the heuristic baseline. This score represents the "Cognitive Match"—factoring in non-obvious signals like industry trends and niche compatibility.
+
+| Layer         | Type          | Responsibility                                       |
+| :------------ | :------------ | :--------------------------------------------------- |
+| **Heuristic** | Fast / Local  | Initial feed filtering and high-match highlighting.  |
+| **Cognitive** | Deep / Remote | Final verification and strategic application advice. |
+
 ## 🔄 Deep Search Intelligence
-
-Unlike standard tools, this engine:
-
-1. **Reads your Profile first**: Pulls hourly rate, top skills, past job titles, and project catalog titles.
-2. **Creates a "Search Intent" Pool**: Does not just look for strings, but for professional alignment.
-3. **Hot-Reloads**: Updates all scores instantly as soon as you change your settings in the popup.
 
 ## 🛡️ Integrity & Safety
 
