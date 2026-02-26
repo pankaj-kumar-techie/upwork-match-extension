@@ -218,6 +218,7 @@ class UpworkEngine {
     log('Initializing Engine...');
     try {
         const data = await chrome.storage.sync.get('settings');
+        if (!chrome.runtime?.id) return;
         this.scorer = new JobScorer(data.settings);
     } catch (e) {
         log('Extension context invalidated during init.');
@@ -227,12 +228,16 @@ class UpworkEngine {
     this.runCycle();
 
     const observer = new MutationObserver(() => {
-      if (!chrome.runtime?.id) return;
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => {
+      try {
         if (!chrome.runtime?.id) return;
-        this.runCycle();
-      }, 600);
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+          try {
+            if (!chrome.runtime?.id) return;
+            this.runCycle();
+          } catch (e) {}
+        }, 600);
+      } catch (e) {}
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -299,6 +304,7 @@ class UpworkEngine {
        try {
            if (!chrome.runtime?.id) break;
            const result = await chrome.storage.local.get('deepIntel');
+           if (!chrome.runtime?.id) break;
            intelData = result.deepIntel || {};
        } catch (e) { break; }
 
@@ -476,8 +482,10 @@ class UpworkEngine {
 
     try {
         const { settings = {} } = await chrome.storage.sync.get('settings');
+        if (!chrome.runtime?.id) return;
+        
         const currentUrl = window.location.href.split('?')[0];
-        const isMyProfile = settings.myProfileUrl && currentUrl.includes(settings.myProfileUrl.split('?')[0]);
+        const isMyProfile = settings.myProfileUrl && currentUrl.includes(settings.myProfileUrl.split('?')[0].replace('~', ''));
         
         const header = document.querySelector(SELECTORS.PROFILE_HEADER);
         if (!header) return;
@@ -493,7 +501,8 @@ class UpworkEngine {
         if (isMyProfile) {
           const lastSync = settings.profileSummary?.lastSync;
           const forceSync = window.location.search.includes('mi-force-sync');
-          if (forceSync || !lastSync || (new Date() - new Date(lastSync) > 12 * 60 * 60 * 1000)) {
+          // ONE-TIME SYNC: Only auto-trigger if never synced OR explicitly forced
+          if (forceSync || !lastSync) {
             if (chrome.runtime?.id) this.syncProfile();
           }
         }
@@ -523,6 +532,8 @@ class UpworkEngine {
 
     try {
         const { settings = {} } = await chrome.storage.sync.get('settings');
+        if (!chrome.runtime?.id) return;
+        
         const updatedSettings = {
           ...settings,
           hourlyRateMin: Math.max(0, rate - 5),
@@ -631,7 +642,7 @@ class UpworkEngine {
     }
 
     return {
-      title: titleEl?.textContent.trim() || jobDataFromTile.title || "Untitled Job",
+      title: titleEl?.textContent.trim() || "Untitled Job",
       link: titleEl?.href || "",
       description: descEl?.textContent.trim() || "",
       type, budget, rateMin, rateMax,
@@ -803,22 +814,44 @@ class UpworkEngine {
                   rate: settings.profileSummary?.rate || settings.hourlyRateMin
               }
           });
+          
+          if (!chrome.runtime?.id) throw new Error('Context lost');
 
           const insight = response.insight;
           if (insight) {
               // Update UI with AI precision
               scoreCircle.innerHTML = `${insight.revisedScore}%`;
-              adviceStrip.innerHTML = `<span class="mi-ai-badge">AI INSIGHT</span> ${insight.alphaInsight}`;
+              adviceStrip.innerHTML = `<span class="mi-ai-badge">AI ANALYSIS</span> ${insight.alphaInsight}`;
               
-              // Add Pitch Hook section
               const content = tile.querySelector('.mi-panel-content');
-              let hookSection = content.querySelector('.mi-ai-hook');
-              if (!hookSection) {
-                  hookSection = document.createElement('div');
-                  hookSection.className = 'mi-ai-hook';
-                  content.insertBefore(hookSection, content.querySelector('.mi-intel-footer'));
+              
+              // 1. Add Strategic Winning Section
+              let strategySection = content.querySelector('.mi-ai-strategy');
+              if (!strategySection) {
+                  strategySection = document.createElement('div');
+                  strategySection.className = 'mi-ai-strategy';
+                  content.insertBefore(strategySection, content.querySelector('.mi-intel-footer'));
               }
-              hookSection.innerHTML = `<strong>Alpha Pitch:</strong> "${insight.pitchHook}"`;
+              strategySection.innerHTML = `
+                <div class="mi-strategy-box">
+                    <strong>Winning Strategy:</strong> ${insight.winningStrategy || "Be the first to highlight technical debt risks."}
+                </div>
+                <div class="mi-pitch-box">
+                    <strong>Pitch Hook:</strong> "${insight.pitchHook}"
+                </div>
+              `;
+
+              // 2. Add Red Flags if any
+              if (insight.redFlags && insight.redFlags.length > 0) {
+                  const footer = content.querySelector('.mi-intel-footer');
+                  let redFlagList = content.querySelector('.mi-red-flags-list');
+                  if (!redFlagList) {
+                      redFlagList = document.createElement('div');
+                      redFlagList.className = 'mi-red-flags-list';
+                      content.insertBefore(redFlagList, footer);
+                  }
+                  redFlagList.innerHTML = insight.redFlags.map(f => `<span class="mi-red-flag-tag">🚩 ${f}</span>`).join('');
+              }
 
               // Visual update
               alphaSidebar.style.background = insight.revisedScore >= 80 ? '#059669' : (insight.revisedScore >= 50 ? '#d97706' : '#dc2626');

@@ -29,32 +29,28 @@ async function handleAIRequest(jobData, profileSummary) {
         throw new Error('AI Model or API Key not configured in popup.');
     }
 
-    const systemPrompt = `You are a high-level MNC Talent Recruiter and Project Manager for a top-tier freelance agency. 
-Your goal is to analyze an Upwork job post against a freelancer's profile to determine if it's a "High Alpha" (highly profitable and perfectly aligned) opportunity.
+    const systemPrompt = `You are an elite MNC Technical Lead and Senior Talent Consultant. Your goal is to analyze an Upwork job post to save a Developer's time and help them win the proposal with professional precision.
 
-FREELANCER PROFILE:
-- Title: ${profileSummary?.title || 'Not Synced'}
-- Target Skills: ${profileSummary?.skills?.join(', ') || 'Not Synced'}
-- Hourly Rate: $${profileSummary?.rate || '0'}/hr
+FREELANCER DNA:
+- Identity: ${profileSummary?.title || 'Senior Software Engineer'}
+- Expertise Matrix: ${profileSummary?.skills?.join(', ') || 'Generalist'}
+- Economic Floor: $${profileSummary?.rate || '0'}/hr
 
-JOB DATA:
-- Title: ${jobData.title}
-- Description: ${jobData.description}
-- Rate/Budget: ${jobData.type === 'Hourly' ? `$${jobData.rateMin}-$${jobData.rateMax}/hr` : `$${jobData.budget}`}
-- Activity: ${jobData.interviewing} interviewing, ${jobData.invites} invites.
+INPUT JOB DATA:
+- Job Title: ${jobData.title}
+- High-Level Requirements: ${jobData.description}
+- Client Financial Velocity: ${jobData.type === 'Hourly' ? `$${jobData.rateMin}-$${jobData.rateMax}/hr` : `$${jobData.budget}`}
 
-SCORING CRITERIA:
-1. Technical Overlap: Do the specific tools/requirements in the job description match the freelancer's profile?
-2. Profitability: Is the budget/rate appropriate for the freelancer's seniority?
-3. Bid Risk: Is there too much competition (many interviews/invites)?
-
-OUTPUT FORMAT (JSON Only):
+REQUIRED OUTPUT (JSON OBJECT ONLY):
 {
-  "revisedScore": number (0-100),
-  "alphaInsight": "1-sentence strategic advice",
-  "pitchHook": "A personalized first sentence for the cover letter that proves expertise",
-  "redFlags": ["list of items or empty"]
-}`;
+  "revisedScore": number (0-100, purely technical and financial alignment),
+  "alphaInsight": "A single sentence explaining why this is or isn't a high-yield opportunity for a developer of this caliber.",
+  "winningStrategy": "Tactical advice on WHAT to mention in the proposal to instantly stand out (e.g., hidden tech debt, architecture risks, or specific framework nuances).",
+  "pitchHook": "The first 2 sentences of a cover letter that proves high-alpha expertise instantly. No fluff.",
+  "redFlags": ["List specific technical or operational red flags found in the text."]
+}
+
+CRITICAL: Be extremely honest. If the job is a time-waster, lower the revisedScore and explain why in alphaInsight. Focus on SAVING the developer's time.`;
 
     if (model === 'gemini') {
         return callGemini(apiKey, systemPrompt);
