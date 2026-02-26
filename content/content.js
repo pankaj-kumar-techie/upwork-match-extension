@@ -8,15 +8,15 @@ const log = (msg, data = '') => { if (DEBUG) console.log(`[MatchIntel] ${msg}`, 
 
 const SELECTORS = {
   // Job Search Selectors
-  JOB_TILE: 'section.job-tile, article.job-tile, [data-test="job-tile-list"] > section, [data-test="job-tile"]',
-  TITLE: "h2.job-tile-title a, h3.job-tile-title a, .up-n-link, [data-test='job-tile-title-link']",
-  DESCRIPTION: '.job-tile-description, [data-test="job-description"], .up-line-clamp-v3',
-  JOB_TYPE: '[data-test="job-type"], .job-tile-info-list li:first-child',
-  CLIENT_LOCATION: '[data-test="client-country"], .job-tile-location',
-  CLIENT_PAYMENT: '[data-test="payment-verified"], .payment-verified, .up-icon-verified-check',
-  CLIENT_SPEND: '[data-test="client-spend"], .client-spend, span[data-test="total-spent"]',
-  CLIENT_HIRE_RATE: '[data-test="client-hire-rate"], .client-hire-rate',
-  JOB_SKILLS: '.up-skill-badge, [data-test="skill"], [data-test="token"], .job-tile-skill, .air3-token',
+  JOB_TILE: 'section.job-tile, article.job-tile, [data-test="job-tile-list"] > section, [data-test="job-tile"], .air3-card-section.job-tile-list, .air3-card-section.job-tile, .job-tile-list > *',
+  TITLE: "h2.job-tile-title a, h3.job-tile-title a, .up-n-link, [data-test='job-tile-title-link'], .job-tile-title a, [data-test='job-tile-list'] a, .job-tile-title h2 a",
+  DESCRIPTION: '.job-tile-description, [data-test="job-description"], .up-line-clamp-v3, .air3-line-clamp-3',
+  JOB_TYPE: '[data-test="job-type"], .job-tile-info-list li:first-child, .air3-display-inline-block',
+  CLIENT_LOCATION: '[data-test="client-country"], .job-tile-location, [data-test="location"]',
+  CLIENT_PAYMENT: '[data-test="payment-verified"], .payment-verified, .up-icon-verified-check, [data-test="payment-status"]',
+  CLIENT_SPEND: '[data-test="client-spend"], .client-spend, span[data-test="total-spent"], .air3-icon-spend',
+  CLIENT_HIRE_RATE: '[data-test="client-hire-rate"], .client-hire-rate, .air3-icon-hire-rate',
+  JOB_SKILLS: '.up-skill-badge, [data-test="skill"], [data-test="token"], .job-tile-skill, .air3-token, .air3-btn-tag',
   
   // Profile Selectors
   PROFILE_NAME: '[data-test="freelancer-name"], h1.m-0, h2.up-card-title, h1, .up-card-header h2',
@@ -90,6 +90,16 @@ class JobScorer {
     const matchRatio = matchCount / Math.min(profileKeywords.length || 1, 10);
     score += Math.min(matchRatio * 40, 40);
 
+    // 2b. Mandatory Skill Lockdown
+    if (jobData.mandatorySkills && jobData.mandatorySkills.length > 0) {
+        const missingMandatory = jobData.mandatorySkills.filter(s => 
+            !profileKeywords.some(p => p.includes(s.toLowerCase()) || s.toLowerCase().includes(p))
+        );
+        if (missingMandatory.length > 0) {
+            score -= (missingMandatory.length * 15); // Heavy penalty for missing mandatory requirements
+        }
+    }
+
     // 3. Financial Alignment (+15%)
     if (jobData.type === 'Hourly') {
       if (jobData.rateMin >= this.settings.hourlyRateMin && jobData.rateMax <= this.settings.hourlyRateMax) {
@@ -136,9 +146,17 @@ class JobScorer {
     if (jobData.proposals === '50+') score -= 25; // Saturated job penalty
     else if (jobData.proposals === '20 to 50') score -= 10;
 
-    // 7. Success Multiplier (Freelancer Mention)
+    // 7. Success Multiplier (Freelancer Mention & History)
     if (jobData.freelancerMentioned) {
-      score += 20; // Massive boost if client has worked with the user before
+      score += 20; 
+    }
+
+    // Recency Momentum
+    score += this.calculateRecencyAlpha(jobData.lastViewed);
+    
+    // Ghost Detection (Unanswered Invites Penalty)
+    if (parseInt(jobData.unanswered) > 10 && parseInt(jobData.interviewing) === 0) {
+        score -= 20;
     }
 
     // 8. Deep Intelligence Boosts (God View)
@@ -150,16 +168,32 @@ class JobScorer {
 
     const finalScore = Math.max(0, Math.min(Math.round(score), 100));
 
+    // Calculate precise skills gap
+    const missingMandatory = (jobData.mandatorySkills || []).filter(s => 
+        !profileKeywords.some(p => p.includes(s.toLowerCase()) || s.toLowerCase().includes(p))
+    );
+
     return {
       total: finalScore,
       matches: Array.from(uniqueMatches),
+      missingMandatory,
       locationMatched,
       isBlacklisted,
       highCompetition: jobData.proposals === '50+',
       freelancerMentioned: jobData.freelancerMentioned,
       paymentVerified: jobData.paymentVerified,
+      recencyAlpha: this.calculateRecencyAlpha(jobData.lastViewed),
       advice: this.generateAlphaAdvice(finalScore, jobData, locationMatched, Array.from(uniqueMatches))
     };
+  }
+
+  calculateRecencyAlpha(lastViewed) {
+    if (!lastViewed) return 0;
+    const lower = lastViewed.toLowerCase();
+    if (lower.includes('minute') || lower.includes('moment')) return 15; // Active NOW
+    if (lower.includes('hour') && parseInt(lower) < 6) return 10; // Active recently
+    if (lower.includes('day') || lower.includes('week')) return -10; // Stale job
+    return 0;
   }
 
   generateAlphaAdvice(score, jobData, locMatched, matches) {
@@ -197,6 +231,10 @@ class JobScorer {
         message = "📍 MARKET ADVANTAGE: Region match + Solid Score. Local domain expertise advantage.";
     }
 
+    if (jobData.lastViewed && (jobData.lastViewed.includes('day') || jobData.lastViewed.includes('week'))) {
+        message = "⚠️ STALE INTENT: Client hasn't viewed this in 24h+. Proceed with caution.";
+    }
+
     if (hasSync && score > 80) {
         message = `✨ MATCH DETECTED for "${this.settings.profileSummary.title}": ` + message.split(': ')[1];
     }
@@ -214,11 +252,11 @@ class UpworkEngine {
   }
 
   async init() {
-    if (!chrome.runtime?.id) return;
+    if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
     log('Initializing Engine...');
     try {
         const data = await chrome.storage.sync.get('settings');
-        if (!chrome.runtime?.id) return;
+        if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
         this.scorer = new JobScorer(data.settings);
     } catch (e) {
         log('Extension context invalidated during init.');
@@ -258,6 +296,15 @@ class UpworkEngine {
       }
     });
 
+    // Keyboard Shortcut Logic (Ctrl+Alt+M)
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'm') {
+            document.body.classList.toggle('mi-stealth');
+            const isStealth = document.body.classList.contains('mi-stealth');
+            log(`Stealth Mode: ${isStealth ? 'ON' : 'OFF'}`);
+        }
+    });
+
     this.setupAutoReload();
   }
 
@@ -291,7 +338,7 @@ class UpworkEngine {
   async autoFetchDeepIntel() {
     const tiles = document.querySelectorAll(SELECTORS.JOB_TILE);
     for (const tile of tiles) {
-       if (!chrome.runtime?.id) break;
+       if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
        const link = tile.querySelector(SELECTORS.TITLE)?.href;
        if (!link || tile.dataset.miDeepProcessed) continue;
 
@@ -302,9 +349,9 @@ class UpworkEngine {
        // Check if we already have recent intel for this job
        let intelData;
        try {
-           if (!chrome.runtime?.id) break;
+           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
            const result = await chrome.storage.local.get('deepIntel');
-           if (!chrome.runtime?.id) break;
+           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
            intelData = result.deepIntel || {};
        } catch (e) { break; }
 
@@ -320,12 +367,14 @@ class UpworkEngine {
        log(`Auto-fetching deep intel for ${jobId}...`);
        
        try {
-           if (!chrome.runtime?.id) break;
+           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
            chrome.runtime.sendMessage({ type: 'FETCH_JOB_DETAILS', url: link }, (response) => {
-              if (!chrome.runtime?.id) return;
+              // Heartbeat check for invalidated context
+              if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
+              
               if (response?.html) {
                  const intel = this.parseIntelFromHtml(response.html);
-                 this.syncDeepIntel(jobId, intel);
+                 if (intel) this.syncDeepIntel(jobId, intel);
               }
            });
        } catch (e) { break; }
@@ -336,65 +385,150 @@ class UpworkEngine {
   }
 
   parseIntelFromHtml(html) {
+    if (!html) return null;
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     const fullText = doc.body.innerText;
 
-    // 1. Client Name (Heuristic scanning of technical reviews)
+    // 1. Client Name (Deep Recursive Heuristic Scanning)
     let clientName = null;
     const feedbacks = doc.querySelectorAll('.up-review-content p, .air3-review-content p, .up-review-content');
+    const namePatterns = [
+        /(?:hi|thanks|thank you|with|to|for|was|to|appreciated|great|pleasure)\s+([A-Z][a-z]+)/i,
+        /([A-Z][a-z]+)\s+(?:was|did|is|has|been|helped)/
+    ];
+    
     for (const fb of feedbacks) {
         const text = fb.textContent;
-        // Search for "Thanks [Name]", "Great to work with [Name]", "[Name] was helpful"
-        const nameMatch = text.match(/(?:hi|thanks|thank you|with|to|for|was)\s+([A-Z][a-z]+)/i);
-        if (nameMatch && !['upwork', 'client', 'the', 'project'].includes(nameMatch[1].toLowerCase())) { 
-            clientName = nameMatch[1]; 
-            break; 
+        for (const pattern of namePatterns) {
+            const nameMatch = text.match(pattern);
+            if (nameMatch && !['upwork', 'client', 'the', 'project', 'he', 'she', 'him', 'her', 'this', 'team', 'highly', 'very', 'work', 'freelancer', 'to', 'for'].includes(nameMatch[1].toLowerCase())) { 
+                clientName = nameMatch[1]; 
+                break; 
+            }
+        }
+        if (clientName) break;
+    }
+
+    // 1b. Deep Name Extraction from Work History
+    if (!clientName) {
+        const historyItems = doc.querySelectorAll('.ca-item, .item');
+        for (const item of historyItems) {
+            const feedbackText = item.innerText;
+            const match = feedbackText.match(/(?:thanks|thank you|great|working with|pleasure|was|to)\s+([A-Z][a-z]{2,15})/i);
+            if (match && !['upwork', 'client', 'the', 'project', 'he', 'she', 'him', 'her', 'this', 'team', 'highly', 'very', 'work', 'freelancer'].includes(match[1].toLowerCase())) {
+                clientName = match[1];
+                break;
+            }
         }
     }
 
-    // 2. Client Stats (More robust patterns for hire rate, spend, etc)
-    const hireRateMatch = html.match(/(\d+)%\s*hire rate/i) || html.match(/hire rate:\s*(\d+)%/i);
-    const spendMatch = html.match(/\$([0-9KkMm+.,]+)\s+(?:total spent|spent)/i) || html.match(/spent:\s*\$([0-9KkMm+.,]+)/i);
+    // 2. Client Stats (Deep State Extraction + Heuristic Regex)
+    const activity = { interview: 0, invites: 0, proposals: '0', lastViewed: null, unanswered: 0 };
+    
+    // Tier 1: Data-QA Selectors (Air3 Layout Robustness)
+    const qaStats = doc.querySelector('[data-qa="client-job-posting-stats"]');
+    const qaSpend = doc.querySelector('[data-qa="client-spend"]');
+    const qaRate = doc.querySelector('[data-qa="client-hourly-rate"]');
+    const qaHires = doc.querySelector('[data-qa="client-hires"]');
+    const qaHours = doc.querySelector('[data-qa="client-hours"]');
+    const qaMember = doc.querySelector('[data-qa="client-contract-date"]');
+    const qaLocation = doc.querySelector('[data-qa="client-location"]');
+
+    let jobsPosted = qaStats?.querySelector('strong')?.innerText.match(/\d+/)?.[0];
+    let hireRateValue = qaStats?.querySelector('div')?.innerText.match(/(\d+)%/)?.[1];
+    let totalSpentValue = qaSpend?.innerText.match(/\$([0-9KkMm+.,]+)/)?.[1];
+    let avgRateValue = qaRate?.innerText.match(/\$([0-9.]+)/)?.[1];
+    let totalHires = qaHires?.innerText.match(/(\d+)\s+hires?/i)?.[1];
+    let activeHires = qaHires?.innerText.match(/(\d+)\s+active/i)?.[1];
+    let totalHours = qaHours?.innerText.match(/([0-9,]+)\s+hours?/i)?.[1];
+    let memberSinceValue = qaMember?.innerText.match(/Member since (.+)/i)?.[1];
+    let locationValue = qaLocation?.querySelector('strong')?.innerText.trim();
+
+    let preloadedState = null;
+    try {
+        const stateMatch = html.match(/window\.__PRELOADED_STATE__\s*=\s*({.*?});/s);
+        if (stateMatch) preloadedState = JSON.parse(stateMatch[1]);
+    } catch (e) {}
+
+    const jobState = preloadedState?.job;
+    const clientState = jobState?.client;
+
+    if (!hireRateValue) hireRateValue = clientState?.statistics?.hireRate || (html.match(/\"hireRate\":(\d+)/)?.[1]) || (html.match(/(\d+)%\s*hire rate/i)?.[1]);
+    if (!totalSpentValue) totalSpentValue = clientState?.statistics?.totalSpent || (html.match(/\"totalSpent\":(\d+)/)?.[1]) || (html.match(/\$([0-9KkMm+.,]+)\s+total spent/i)?.[1]);
+    if (!avgRateValue) avgRateValue = clientState?.statistics?.hourlyRatePaidAvg || (html.match(/\"hourlyRatePaidAvg\":([0-9.]+)/)?.[1]);
+    
+    const hireRateMatch = html.match(/(\d+)%\s*(?:hire rate|hire)/i) || html.match(/hire rate:\s*(\d+)%/i);
+    const spendMatch = html.match(/\$([0-9KkMm+.,]+)(?:\+)?\s+(?:total spent|spent)/i) || html.match(/spent:\s*\$([0-9KkMm+.,]+)/i);
     const avgRateMatch = html.match(/\$([0-9.]+)\s+\/hr\s+avg hourly rate paid/i) || html.match(/avg hourly rate paid:\s*\$([0-9.]+)/i);
     const ratingMatch = html.match(/Rating is ([0-9.]+)/i) || html.match(/([45]\.[0-9])\s+of\s+5\s+stars/i) || html.match(/([\d\.]+)\s+Rating/i);
     const memberSinceMatch = html.match(/Member since ([A-Z][a-z]+ \d+, \d+)/i) || html.match(/Joined\s+([A-Z][a-z]+ \d+, \d+)/i);
     
+    const jobsPostedMatch = html.match(/(\d+)\s+jobs posted/i);
+    const hiresMatch = html.match(/(\d+)\s+hires/i);
+    const activeMatch = html.match(/(\d+)\s+active/i);
+    const hoursMatch = html.match(/(\d+,?\d*)\s+hours/i);
+
     // 3. Location Extraction
     let location = null;
     const locMatch = html.match(/([A-Z][A-Za-z\s,]+)\d{1,2}:\d{2}\s+(?:AM|PM)/);
     if (locMatch) location = locMatch[1].trim().replace(/\s+$/, '');
 
-    // 4. Activity on Job (More robust parsing)
-    const activity = { interview: 0, invites: 0, proposals: '0' };
-    
-    // Pattern 1: Regex on full text (fastest & most reliable for SSR content)
-    const intMatch = fullText.match(/Interviewing:\s*(\d+)/i);
-    const invMatch = fullText.match(/Invites sent:\s*(\d+)/i);
-    const propMatch = fullText.match(/Proposals:\s*([0-9\-\s\+to]+)/i);
-    
-    if (intMatch) activity.interview = parseInt(intMatch[1]);
-    if (invMatch) activity.invites = parseInt(invMatch[1]);
-    if (propMatch) activity.proposals = propMatch[1].trim();
+    // 4. Activity Momentum Logic (Tier 1: List Selectors)
+    const activityItems = doc.querySelectorAll('.client-activity-items .ca-item');
+    activityItems.forEach(item => {
+        const title = item.querySelector('.title')?.innerText.toLowerCase() || '';
+        const value = item.querySelector('.value')?.innerText.trim() || '';
+        if (title.includes('interviewing')) activity.interview = parseInt(value) || 0;
+        else if (title.includes('invites sent')) activity.invites = parseInt(value) || 0;
+        else if (title.includes('unanswered')) activity.unanswered = parseInt(value) || 0;
+        else if (title.includes('proposals')) activity.proposals = value;
+        else if (title.includes('last viewed')) activity.lastViewed = value;
+    });
 
-    // Pattern 2: Selector fallback
+    // Fallback: Regex Search
     if (activity.interview === 0) {
-        const activityItems = doc.querySelectorAll('[data-test="activity-on-this-job"] li, .up-job-details-activity li, .air3-activity-list-item');
-        activityItems.forEach(li => {
-            const txt = li.innerText.toLowerCase();
-            if (txt.includes('interviewing')) activity.interview = parseInt(txt.match(/\d+/)?.[0] || 0);
-            if (txt.includes('invites sent')) activity.invites = parseInt(txt.match(/\d+/)?.[0] || 0);
-        });
+        const intMatch = fullText.match(/Interviewing:\s*(\d+)/i);
+        if (intMatch) activity.interview = parseInt(intMatch[1]);
+    }
+    if (activity.invites === 0) {
+        const invMatch = fullText.match(/Invites sent:\s*(\d+)/i);
+        if (invMatch) activity.invites = parseInt(invMatch[1]);
+    }
+    if (!activity.lastViewed) {
+        const viewMatch = fullText.match(/Last viewed by client:\s*([^\n]+)/i);
+        if (viewMatch) activity.lastViewed = viewMatch[1].trim();
+    }
+    
+    // 4b. Connects Extraction
+    const connectsMatch = fullText.match(/Send a proposal for:\s*(\d+)/i) || html.match(/Send a proposal for:\s*<strong>(\d+)<\/strong>/i);
+    const availableMatch = fullText.match(/Available Connects:\s*(\d+)/i) || html.match(/Available Connects:\s*<strong>(\d+)<\/strong>/i);
+    
+    const hireMatch = fullText.match(/(\d+)%\s*hire rate/i) || html.match(/(\d+)%\s*hire rate/i);
+
+    // 5. Mandatory Skills Extraction
+    const mandatorySkills = [];
+    const mandatorySection = doc.querySelector('[data-test="mandatory-skills-section"], .air3-token-container');
+    if (mandatorySection) {
+        mandatorySection.querySelectorAll('.air3-token').forEach(t => mandatorySkills.push(t.innerText.trim()));
     }
 
     return {
         clientName,
-        location,
-        hireRate: hireRateMatch ? parseInt(hireRateMatch[1]) : null,
-        clientSpend: spendMatch ? "$" + spendMatch[1] : null,
-        avgRatePaid: avgRateMatch ? "$" + avgRateMatch[1] : null,
-        avgRating: ratingMatch ? ratingMatch[1] : null,
-        memberSince: memberSinceMatch ? memberSinceMatch[1] : null,
+        location: locationValue || location,
+        mandatorySkills,
+        hireRate: (hireRateValue !== undefined && hireRateValue !== null && hireRateValue !== "") ? parseInt(hireRateValue) : (hireMatch ? parseInt(hireMatch[1]) : (hireRateMatch ? parseInt(hireRateMatch[1]) : null)),
+        clientSpend: (totalSpentValue !== undefined && totalSpentValue !== null) ? (totalSpentValue.toString().includes('$') ? totalSpentValue : "$" + totalSpentValue) : (totalSpendMatch ? "$" + totalSpendMatch[1] : (spendMatch ? "$" + spendMatch[1] : null)),
+        avgRatePaid: (avgRateValue !== undefined && avgRateValue !== null) ? "$" + avgRateValue : (avgRateMatch ? "$" + avgRateMatch[1] : null),
+        avgRating: (ratingValue !== undefined && ratingValue !== null) ? ratingValue.toString() : (ratingMatch ? ratingMatch[1] : null),
+        memberSince: memberSinceValue || (memberSinceMatch ? memberSinceMatch[ memberSinceMatch.length - 1 ] : null),
+        jobsPosted: jobsPosted || (jobsPostedMatch ? jobsPostedMatch[1] : null),
+        totalHires: totalHires || (hiresMatch ? hiresMatch[1] : null),
+        activeHires: activeHires || (activeMatch ? activeMatch[1] : null),
+        totalHours: totalHours || (hoursMatch ? hoursMatch[1] : null),
+        paymentVerified: preloadedState?.job?.client?.paymentVerificationStatus === 1 || html.includes('Payment method verified'),
+        connectsRequired: connectsMatch ? connectsMatch[1] : null,
+        availableConnects: availableMatch ? availableMatch[1] : null,
         activity,
         updated: new Date().toISOString()
     };
@@ -438,12 +572,23 @@ class UpworkEngine {
 
   applyDeepIntelToTile(tile, intel) {
     if (!intel) return;
-    tile.dataset.clientName = intel.clientName || '';
+    if (intel.clientName) tile.dataset.clientName = intel.clientName;
+    else delete tile.dataset.clientName;
+
     tile.dataset.interviewing = intel.activity?.interview || '0';
     tile.dataset.invites = intel.activity?.invites || '0';
+    tile.dataset.lastViewed = intel.activity?.lastViewed || '';
+    tile.dataset.unanswered = intel.activity?.unanswered || '0';
+    tile.dataset.mandatorySkills = (intel.mandatorySkills || []).join(',');
     tile.dataset.avgRatePaid = intel.avgRatePaid || '';
     tile.dataset.avgRating = intel.avgRating || '';
     tile.dataset.memberSince = intel.memberSince || '';
+    tile.dataset.jobsPosted = intel.jobsPosted || '';
+    tile.dataset.totalHires = intel.totalHires || '';
+    tile.dataset.activeHires = intel.activeHires || '';
+    tile.dataset.totalHours = intel.totalHours || '';
+    if (intel.connectsRequired) tile.dataset.connectsRequired = intel.connectsRequired;
+    if (intel.paymentVerified) tile.dataset.paymentVerifiedBackfill = 'true';
     if (intel.location) tile.dataset.locationBackfill = intel.location;
     if (intel.hireRate !== null) tile.dataset.hireRateBackfill = intel.hireRate;
     if (intel.clientSpend !== null) tile.dataset.spendBackfill = intel.clientSpend;
@@ -465,11 +610,18 @@ class UpworkEngine {
 
   async saveDetectedProfileUrl(url) {
     if (!chrome.runtime?.id) return;
+    if (this._lastSavedUrl === url) return; // Immediate memory-cache bypass 
+    
     try {
         const { settings = {} } = await chrome.storage.sync.get('settings');
+        if (!chrome.runtime?.id) return;
+        
         if (settings.myProfileUrl !== url) {
           log('Saving detected profile URL:', url);
+          this._lastSavedUrl = url;
           await chrome.storage.sync.set({ settings: { ...settings, myProfileUrl: url } });
+        } else {
+          this._lastSavedUrl = url;
         }
     } catch (e) {
         log('Context lost in saveDetectedProfileUrl');
@@ -563,11 +715,28 @@ class UpworkEngine {
 
   scanAndProcess() {
     const jobTiles = document.querySelectorAll(SELECTORS.JOB_TILE);
-    jobTiles.forEach(tile => {
-      if (tile.dataset.matchProcessed) return;
+    jobTiles.forEach(async (tile) => {
+      if (tile.dataset.matchProcessed === 'true') return;
       
+      const link = tile.querySelector(SELECTORS.TITLE)?.href;
+      if (!link) return;
+      const jobIdMatch = link.match(/~[0-9a-f]+/i);
+      if (jobIdMatch) {
+          const jobId = jobIdMatch[0];
+          // Check if we have deep intel in cache
+          try {
+              if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
+              const { deepIntel = {} } = await chrome.storage.local.get('deepIntel');
+              if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
+              if (deepIntel[jobId]) {
+                  this.applyDeepIntelToTile(tile, deepIntel[jobId]);
+                  return;
+              }
+          } catch(e) {}
+      }
+
       const jobData = this.extractJobData(tile);
-      if (jobData.title) {
+      if (jobData.title && jobData.title !== "Untitled Job") {
         const result = this.scorer.calculateScore(jobData);
         this.injectBadge(tile, result.total, jobData, result.matches);
         tile.dataset.matchProcessed = 'true';
@@ -618,21 +787,11 @@ class UpworkEngine {
 
     // --- EXTRACT CLIENT QUALITY ---
     // Hire Rate check
-    let hireRate = tile.dataset.hireRateBackfill ? parseInt(tile.dataset.hireRateBackfill) : 0;
+    let hireRate = tile.dataset.hireRateBackfill ? parseInt(tile.dataset.hireRateBackfill) : null;
     const fullText = tile.innerText;
-    if (hireRate === 0) {
-        const hireRateMatch = fullText.match(/(\d+)% hire rate/i);
-        if (hireRateMatch) {
-            hireRate = parseInt(hireRateMatch[1]);
-        } else if (hireRateEl) {
-            const hrText = hireRateEl.textContent;
-            const hrMatch = hrText.match(/(\d+)%/);
-            if (hrMatch) hireRate = parseInt(hrMatch[1]);
-        }
-    }
-
+    
     // Payment Verification check
-    const paymentVerified = !!paymentEl || fullText.toLowerCase().includes('payment verified');
+    const paymentVerified = !!paymentEl || fullText.toLowerCase().includes('payment verified') || tile.dataset.paymentVerifiedBackfill === 'true';
 
     // Spend check
     let clientSpend = tile.dataset.spendBackfill || spendEl?.textContent.trim() || "$0";
@@ -653,8 +812,17 @@ class UpworkEngine {
       proposals,
       avgRating: tile.dataset.avgRating || null,
       avgRatePaid: tile.dataset.avgRatePaid || null,
+      jobsPosted: tile.dataset.jobsPosted || null,
+      totalHires: tile.dataset.totalHires || null,
+      activeHires: tile.dataset.activeHires || null,
+      totalHours: tile.dataset.totalHours || null,
+      memberSince: tile.dataset.memberSince || null,
+      connectsRequired: tile.dataset.connectsRequired || null,
       interviewing: tile.dataset.interviewing || 0,
       invites: tile.dataset.invites || 0,
+      lastViewed: tile.dataset.lastViewed || null,
+      unanswered: tile.dataset.unanswered || 0,
+      mandatorySkills: tile.dataset.mandatorySkills ? tile.dataset.mandatorySkills.split(',') : [],
       freelancerMentioned: tile.dataset.clientName ? true : false,
       jobSkills: Array.from(skillsEls).map(el => el.textContent.trim())
     };
@@ -691,61 +859,92 @@ class UpworkEngine {
         </div>
         
         <div class="mi-panel-content">
-          <div class="mi-advice-strip">${result.advice.message}</div>
-          <div class="mi-match-rationale">${result.advice.rationale}</div>
+          <div class="mi-strategic-verdict">
+             <div class="mi-verdict-label" style="background: ${color}">${this.getVerdictTitle(score)}</div>
+             <div class="mi-verdict-message">${result.advice.message}</div>
+          </div>
           
           <div class="mi-dossier-grid">
+            ${this.scorer.settings.profileSummary?.title ? `
             <div class="mi-dossier-item">
-                <span class="label">CLIENT</span>
-                <span class="value">${tile.dataset.clientName || 'ANONYMOUS'}</span>
-            </div>
+                <span class="label">COMPETENCY ANCHOR</span>
+                <span class="value">${this.scorer.settings.profileSummary.title.toUpperCase()}</span>
+            </div>` : ''}
+
             <div class="mi-dossier-item">
-                <span class="label">MARKET</span>
-                <span class="value">📍 ${jobData.location.toUpperCase()}</span>
+                <span class="label">SKILLS ALIGNMENT</span>
+                <span class="value">${result.matches.length > 0 ? `MATCHED: ${result.matches.slice(0,3).join(', ')}` : (this.scorer.settings.keywords?.length > 0 ? 'NO OVERLAP' : 'SYNC PROFILE...')}</span>
             </div>
-             <div class="mi-dossier-item">
-                <span class="label">ACTIVITY</span>
-                <span class="value">${this.getActivityStatus(tile)}</span>
-            </div>
+
             <div class="mi-dossier-item">
-                <span class="label">HISTORY</span>
-                <span class="value">${this.getHistoryStatus(tile, jobData)}</span>
+                <span class="label">COMPETITION HEAT</span>
+                <span class="value">${this.getCompetitionHeat(jobData)}</span>
             </div>
+
+            ${jobData.lastViewed ? `
+            <div class="mi-dossier-item">
+                <span class="label">RECENCY</span>
+                <span class="value">👀 ${jobData.lastViewed.toUpperCase()}</span>
+            </div>` : jobData.memberSince ? `
+            <div class="mi-dossier-item">
+                <span class="label">SINCE</span>
+                <span class="value">${jobData.memberSince.toUpperCase()}</span>
+            </div>` : ''}
+
+            ${result.missingMandatory && result.missingMandatory.length > 0 ? `
+            <div class="mi-dossier-item full-width" style="color: #be123c; border-top: 1px dashed #fecaca; margin-top: 5px; padding-top: 5px;">
+                <span class="label" style="color: #e11d48;">⚠️ MISSING MANDATORY SKILLS</span>
+                <span class="value">${result.missingMandatory.join(' • ')}</span>
+            </div>` : ''}
+
+            ${this.hasClientDossier(jobData) ? `
+            <div class="mi-dossier-item full-width">
+                <span class="label">CLIENT HISTORY & TRUST DOSSIER</span>
+                <span class="value">${tile.dataset.clientName ? `[${tile.dataset.clientName}] • ` : ''}${this.getClientDossierLine(jobData)}</span>
+            </div>` : ''}
           </div>
 
-          <div class="mi-intel-footer">
+          <div class="mi-intel-footer" style="${(result.matches.length === 0 && !jobData.connectsRequired) ? 'display:none' : ''}">
             <div class="mi-detail-chips">
-                 ${jobData.avgRatePaid ? `<span class="mi-chip gold">${jobData.avgRatePaid} AVG PAID</span>` : ''}
+                 ${jobData.connectsRequired ? `<span class="mi-chip gold">${jobData.connectsRequired} CONNECTS</span>` : ''}
                  ${jobData.avgRating ? `<span class="mi-chip">⭐ ${jobData.avgRating}</span>` : ''}
-                 ${jobData.hireRate !== null ? `<span class="mi-chip ${jobData.hireRate < 30 && jobData.hireRate > 0 ? 'pulse red' : ''}">${jobData.hireRate}% HIRE</span>` : ''}
-                 ${tile.dataset.invites && tile.dataset.invites !== '0' ? `<span class="mi-chip gold pulse">📩 ${tile.dataset.invites} INVITES</span>` : ''}
-                 ${tile.dataset.interviewing && tile.dataset.interviewing !== '0' ? `<span class="mi-chip pulse">🔥 ${tile.dataset.interviewing} INTERVIEWING</span>` : ''}
+                 ${(jobData.hireRate !== null && jobData.hireRate > 0) ? `<span class="mi-chip ${jobData.hireRate < 30 ? 'pulse red' : ''}">${jobData.hireRate}% HIRE</span>` : ''}
+                 ${jobData.invites > 0 ? `<span class="mi-chip gold pulse">📩 ${jobData.invites} INVITES</span>` : ''}
+                 ${jobData.interviewing > 0 ? `<span class="mi-chip pulse">🔥 ${jobData.interviewing} INTERVIEWING</span>` : ''}
             </div>
           </div>
         </div>
 
         <div class="mi-actions-container">
-            <button class="mi-ai-action" title="AI Deep Dive">
-              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" /></svg>
-            </button>
+            ${score >= (this.scorer.settings.minScoreToNotify || 85) ? `
+            <button class="mi-ai-action" title="AI Deep Dive (Alpha Analysis)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </button>` : ''}
             <button class="mi-save-action" title="Track Opportunity">
-              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z" /></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
         </div>
       </div>
     `;
 
-    badge.querySelector('.mi-save-action').onclick = (e) => {
-      e.preventDefault(); e.stopPropagation();
-      this.saveJob(jobData);
-      e.currentTarget.style.color = '#10b981';
-      e.currentTarget.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>';
-    };
+    // SAFELY ATTACH EVENT LISTENERS
+    const saveBtn = badge.querySelector('.mi-save-action');
+    if (saveBtn) {
+        saveBtn.onclick = (e) => {
+          e.preventDefault(); e.stopPropagation();
+          this.saveJob(jobData);
+          e.currentTarget.style.color = '#10b981';
+          e.currentTarget.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17L4 12"/></svg>';
+        };
+    }
 
-    badge.querySelector('.mi-ai-action').onclick = (e) => {
-        e.preventDefault(); e.stopPropagation();
-        this.triggerAIInsight(tile, jobData);
-    };
+    const aiBtn = badge.querySelector('.mi-ai-action');
+    if (aiBtn) {
+        aiBtn.onclick = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            this.triggerAIInsight(tile, jobData);
+        };
+    }
 
     tile.prepend(badge);
     const threshold = this.scorer.settings.minScoreToNotify || 85;
@@ -765,6 +964,24 @@ class UpworkEngine {
     }
   }
 
+  getVerdictTitle(score) {
+      if (score >= 85) return '🔥 PRIME';
+      if (score >= 65) return '⚖️ NEUTRAL';
+      if (score >= 45) return '⚠️ FRICTION';
+      return '📉 SKIP';
+  }
+
+  getCompetitionHeat(jobData) {
+      const interview = parseInt(jobData.interviewing || 0);
+      const proposals = jobData.proposals || "0";
+      
+      if (interview >= 5) return '🔥 ACTIVE RACE';
+      if (proposals.includes('50+')) return '⚠️ SATURATED';
+      if (proposals.includes('20') || proposals.includes('15')) return '⚖️ COMPETITIVE';
+      if (proposals.includes('5') || proposals.includes('Less than 5')) return '💎 LOW FRICTION';
+      return 'NEW OPPORTUNITY';
+  }
+
   notifyHighMatch(jobData, score) {
     if (!chrome.runtime?.id) return;
     if (this.processedJobs.has(jobData.link)) return;
@@ -772,20 +989,40 @@ class UpworkEngine {
     chrome.runtime.sendMessage({ type: "NOTIFY_HIGH_MATCH", jobData, score });
   }
 
-  getActivityStatus(tile) {
-      const interview = parseInt(tile.dataset.interviewing || '0');
-      const invites = parseInt(tile.dataset.invites || '0');
-      if (interview > 0) return `🔥 ${interview} INTERVIEWING`;
-      if (invites > 0) return `📩 ${invites} INVITES`;
-      return 'QUIET';
+  getFullActivityStatus(jobData) {
+      const parts = [];
+      const interview = parseInt(jobData.interviewing || 0);
+      const invites = parseInt(jobData.invites || 0);
+      const unanswered = parseInt(jobData.unanswered || 0);
+      const proposals = jobData.proposals || "0";
+      
+      parts.push(`📝 ${proposals.toUpperCase()}`);
+      if (interview > 0) parts.push(`🤝 ${interview} INT`);
+      if (invites > 0) parts.push(`📩 ${invites} INV`);
+      if (unanswered > 0) parts.push(`🚩 ${unanswered} GHOSTED`);
+      
+      return parts.length > 0 ? parts.join(' | ') : 'QUIET';
   }
 
-  getHistoryStatus(tile, jobData) {
-      if (tile.dataset.memberSince) {
-          const year = tile.dataset.memberSince.match(/\d{4}/)?.[0] || 'NEW';
-          return `SINCE ${year}`;
+  hasClientDossier(jobData) {
+      return jobData.jobsPosted || jobData.totalHires || jobData.totalHours || jobData.avgRatePaid;
+  }
+
+  getProposalTypeLine(jobData) {
+      if (jobData.type === 'Hourly') {
+          return jobData.rateMax ? `$${jobData.rateMin}-$${jobData.rateMax}/HR` : `$${jobData.rateMin}/HR`;
       }
-      return jobData.clientSpend !== '$0' ? 'ESTABLISHED' : 'NEW';
+      return jobData.budget ? `$${jobData.budget} FIXED` : 'FIXED-PRICE';
+  }
+
+  getClientDossierLine(jobData) {
+      const parts = [];
+      if (jobData.jobsPosted && jobData.jobsPosted !== '0') parts.push(`${jobData.jobsPosted} POSTS`);
+      if (jobData.totalHires && jobData.totalHires !== '0') parts.push(`${jobData.totalHires} HIRES`);
+      if (jobData.activeHires && jobData.activeHires !== '0') parts.push(`${jobData.activeHires} ACTIVE`);
+      if (jobData.totalHours && jobData.totalHours !== '0') parts.push(`${jobData.totalHours}HRS`);
+      
+      return parts.length > 0 ? parts.join(' • ') : 'NEW CLIENT';
   }
 
   async triggerAIInsight(tile, jobData) {

@@ -40,6 +40,9 @@ INPUT JOB DATA:
 - Job Title: ${jobData.title}
 - High-Level Requirements: ${jobData.description}
 - Client Financial Velocity: ${jobData.type === 'Hourly' ? `$${jobData.rateMin}-$${jobData.rateMax}/hr` : `$${jobData.budget}`}
+- VETTING METRICS: ${jobData.hireRate || '0'}% Hire Rate, ${jobData.clientSpend || '$0'} Spent, ${jobData.avgRatePaid || 'N/A'} Avg Paid.
+- CURRENT FRICTION: ${jobData.interviewing || '0'} Interviewing, ${jobData.invites || '0'} active invites, ${jobData.unanswered || '0'} unanswered.
+- CLIENT INTENT: Last viewed by client: ${jobData.lastViewed || 'Unknown'}.
 
 REQUIRED OUTPUT (JSON OBJECT ONLY):
 {

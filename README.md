@@ -1,31 +1,44 @@
-# 🧠 Upwork Match Intelligence (MNC-Grade)
+# Upwork Match Intelligence Extension ⚡
 
-An advanced, decentralized lead qualification layer for professional freelancers. This system transforms the standard Upwork feed into a **High-Alpha Strategic Dashboard**.
+Upwork Match Intelligence (UMI) is a high-alpha proposal reconnaissance tool designed for senior freelancers. It transforms the Upwork feed into a technical "God View" by anchoring buried metadata, performing skills gap analysis, and providing strategic AI insights.
 
-## 🚀 Precision Features
+## 🚀 Key Problems Solved
 
-- **Profile Intelligence**: Automatically analyzes your Upwork profile to calibrate your ideal matching logic.
-- **Cognitive Scoring**: Computes a multi-dimensional 0-100% score for every job in your viewport.
-- **God View (Deep Intel)**: Automatically fetches client names, interview activity, and historical hire rates.
-- **Alpha Alerts**: Real-time OS notifications and Discord/Telegram webhooks for high-match opportunities.
-- **Model Support**: Ready for direct integration with Gemini and ChatGPT for job analysis.
+1.  **Hidden Client Intent**: Upwork hides "Activity on this job" (Interviews, Invites, Last Viewed) behind a click. UMI anchors this directly to the job tile.
+2.  **Skills Blindness**: Instantly see if you are missing "Mandatory Skills" without opening the project.
+3.  **Low-Trust Detection**: Highlighting payment verification and low hire rates (<30%) as tactical "Red Flags".
+4.  **Proposal Over-saturation**: Capping scores for jobs with 50+ proposals to prevent wasting connects on saturated markets.
+5.  **AI Strategic Advantage**: Dynamic pitch hooks and winning strategies based on deep project telemetry.
 
-## 📚 Strategic Documentation
+## 🧠 Scoring Architecture
 
-Explore our high-level architecture and implementation guides:
+The "Alpha Score" (0-100%) is calculated using a multi-factor regression heuristic:
 
-- [🧠 **Scoring Intelligence**](docs/scoring-logic.md): Deep-dive into the MNC-grade weighted algorithm.
-- [🏗️ **System Architecture**](docs/architecture.md): Visual maps of the engine and data flow.
-- [🤖 **AI Integration**](docs/ai-integration.md): Guide to Gemini and OpenAI cognitive features.
-- [🚀 **Product Roadmap**](docs/roadmap.md): Upcoming Alpha Agent features.
-- [📄 **Production Guide**](docs/production.md): Calibration and deployment best practices.
+| Factor               | Weight     | Alpha Rationale                                   |
+| :------------------- | :--------- | :------------------------------------------------ |
+| **Trust Layer**      | +/- 20%    | Payment Verified? Hiring History?                 |
+| **Skills Alignment** | + 40%      | Direct overlap with your Synced Profile skills.   |
+| **Mandatory Skills** | - 15% / ea | Penalty for missing explicit client requirements. |
+| **Financial Fit**    | + 15%      | Does the budget/rate floor meet your settings?    |
+| **Saturation**       | - 25%      | Penalty for 50+ proposals (Saturation Shield).    |
+| **Recency Alpha**    | + 15%      | Bonus if client viewed the job "Seconds ago".     |
+| **Collaboration**    | + 20%      | History with you or similar profiles.             |
 
-## 🛠️ Installation & Setup
+## 🛠️ Tactical Interface (God View)
 
-1. **Deployment**: Load the extension as an "Unpacked Extension" in `chrome://extensions/`.
-2. **Calibration**: Navigate to your Upwork Profile and click **"Sync MY Intelligence"**.
-3. **Activation**: The engine will now automatically inject the **Strategic Panel** into your job feed.
+UMI purges visual noise (Budget, Spent, Type) that you can already see, focusing on high-value intelligence:
+
+- **Activity Hub**: Real-time Proposals, Interviews, and Invites Sent.
+- **Client Dossier**: Total Hires, Active Projects, and Avg Hourly Rate Paid.
+- **Skills Alignment**: Highlighted matched skills and warnings for missing mandatory skills.
+- **Strategic Panel**: Advice strip with actionable signals (e.g., "GHOST JOB", "ALPHA SIGNAL").
+
+## ⚡ Setup & Sync
+
+1.  **Install**: Load the unpacked extension in Chrome.
+2.  **Sync Intelligence**: Visit your [Upwork Profile](https://www.upwork.com/freelancers/~) once. The extension will auto-sync your skills and current rate into the intelligence engine.
+3.  **Deploy**: Refresh your "Find Work" feed. Your "God View" is now active.
 
 ---
 
-_Built for top-tier freelancers. Precision matching. Zero-cost intelligence._
+_MNC-Grade Proposal Engineering for High-Performance Talent._
