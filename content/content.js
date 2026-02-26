@@ -686,6 +686,7 @@ class UpworkEngine {
         const { settings = {} } = await chrome.storage.sync.get('settings');
         if (!chrome.runtime?.id) return;
         
+        // Populate the 'Skill Vectors & Filter / Expertise Matrix' in the popup settings
         const updatedSettings = {
           ...settings,
           hourlyRateMin: Math.max(0, rate - 5),

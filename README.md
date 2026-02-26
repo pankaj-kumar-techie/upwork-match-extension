@@ -1,43 +1,48 @@
-# Upwork Match Intelligence Extension ⚡
+# Upwork Match Intelligence (UMI) ⚡
 
-Upwork Match Intelligence (UMI) is a high-alpha proposal reconnaissance tool designed for senior freelancers. It transforms the Upwork feed into a technical "God View" by anchoring buried metadata, performing skills gap analysis, and providing strategic AI insights.
+UMI is a production-grade proposal reconnaissance tool designed for senior freelancers. It transforms the Upwork job feed into a technical "God View" by anchoring hidden metadata, performing deep skills gap analysis, and providing strategic AI insights.
 
 ## 🚀 Key Problems Solved
 
-1.  **Hidden Client Intent**: Upwork hides "Activity on this job" (Interviews, Invites, Last Viewed) behind a click. UMI anchors this directly to the job tile.
-2.  **Skills Blindness**: Instantly see if you are missing "Mandatory Skills" without opening the project.
-3.  **Low-Trust Detection**: Highlighting payment verification and low hire rates (<30%) as tactical "Red Flags".
-4.  **Proposal Over-saturation**: Capping scores for jobs with 50+ proposals to prevent wasting connects on saturated markets.
-5.  **AI Strategic Advantage**: Dynamic pitch hooks and winning strategies based on deep project telemetry.
+1.  **Hidden Intent**: No more clicking through to see "Activity on this job". UMI anchors interviews, invites, and recent views directly to your feed.
+2.  **Skills Blindness**: Instantly see matching keywords and **Missing Mandatory Skills** before investing connects.
+3.  **Low-Yield Filtering**: Automatically penalizes jobs with unverified payments or low hire rates (<30%).
+4.  **Market Saturation**: The "Saturation Shield" de-prioritizes jobs with 50+ proposals.
+5.  **Strategic Bidding**: AI-generated "Pitch Hooks" and "Winning Strategies" for high-alpha opportunities.
 
-## 🧠 Scoring Architecture
+## 🧠 Core Intelligence Modules
 
-The "Alpha Score" (0-100%) is calculated using a multi-factor regression heuristic:
+### 1. Zero-Config Profile Sync
 
-| Factor               | Weight     | Alpha Rationale                                   |
-| :------------------- | :--------- | :------------------------------------------------ |
-| **Trust Layer**      | +/- 20%    | Payment Verified? Hiring History?                 |
-| **Skills Alignment** | + 40%      | Direct overlap with your Synced Profile skills.   |
-| **Mandatory Skills** | - 15% / ea | Penalty for missing explicit client requirements. |
-| **Financial Fit**    | + 15%      | Does the budget/rate floor meet your settings?    |
-| **Saturation**       | - 25%      | Penalty for 50+ proposals (Saturation Shield).    |
-| **Recency Alpha**    | + 15%      | Bonus if client viewed the job "Seconds ago".     |
-| **Collaboration**    | + 20%      | History with you or similar profiles.             |
+UMI is "Smart from Day 1". Visit your [Upwork Profile](https://www.upwork.com/freelancers/~) once, and the extension will auto-sync your skills, title, and rate into the **Expertise Matrix**. This pool is used to calculate all matches and guide the AI.
 
-## 🛠️ Tactical Interface (God View)
+### 2. The Alpha Score (0-100)
 
-UMI purges visual noise (Budget, Spent, Type) that you can already see, focusing on high-value intelligence:
+A multi-layered heuristic engine that weighs Trust, Competency, and Opportunity Heat.
 
-- **Activity Hub**: Real-time Proposals, Interviews, and Invites Sent.
-- **Client Dossier**: Total Hires, Active Projects, and Avg Hourly Rate Paid.
-- **Skills Alignment**: Highlighted matched skills and warnings for missing mandatory skills.
-- **Strategic Panel**: Advice strip with actionable signals (e.g., "GHOST JOB", "ALPHA SIGNAL").
+- **PRIME (>85)**: High alignment, low friction.
+- **NEUTRAL (65-85)**: Solid but requires review.
+- **FRICTION (<45)**: Stale intent, saturated market, or skill mismatch.
 
-## ⚡ Setup & Sync
+### 3. AI Deep Dive (Alpha Insight)
 
-1.  **Install**: Load the unpacked extension in Chrome.
-2.  **Sync Intelligence**: Visit your [Upwork Profile](https://www.upwork.com/freelancers/~) once. The extension will auto-sync your skills and current rate into the intelligence engine.
-3.  **Deploy**: Refresh your "Find Work" feed. Your "God View" is now active.
+When you find a High-Alpha Opportunity, trigger the **Deep Dive**. UMI sends job telemetry to your LLM (Gemini/OpenAI) to generate a tactical pitch hook and a revised "Cognitive Score".
+
+## 🛠️ Setup & Best Practices
+
+1.  **Install**: Load the `upwork-match-extension` folder as an unpacked extension in Chrome.
+2.  **Calibrate**: Open the extension popup, set your Target Rates and Budget Minimums.
+3.  **Sync Profile**: visit your Upwork Profile. Click **"⚡ Sync MY Intelligence"**. This populates your **Expertise Matrix**.
+4.  **LLM Setup**: (Optional) Add your Gemini or OpenAI API Key in the popup Settings tab to enable the **Deep Dive** feature.
+5.  **Deploy**: Navigate to "Most Recent" or "My Feed" on Upwork and watch the intelligence arrive.
+
+## 🔍 Manual Testing & Verification
+
+To confirm the extension is functioning correctly:
+
+- **Badge Injection**: Badges should appear on every job card with an `ALPHA` score.
+- **Sync Check**: After syncing your profile, open the popup and verify the "Skill Vectors" textarea is populated with your skills.
+- **AI Verification**: Click the circle icon on a high-score job. If configured correctly, it will show "Consultant is analyzing..." and then reveal a "Winning Strategy".
 
 ---
 

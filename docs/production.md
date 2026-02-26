@@ -44,8 +44,12 @@ To maintain a premium experience, the engine adheres to these constraints:
 - **API Safety**: Does not hit Upwork APIs directly; uses human-simulated scraping to avoid detection.
 - **Memory Optimization**: Auto-cleans job cache every 3 hours to maintain low memory usage.
 
+## 🧪 Quality Assurance
+
+For a step-by-step verification of all systems, please refer to the **[Manual Testing & Verification Guide](TESTING_GUIDE.md)**.
+
 ## 🔍 Maintenance & Monitoring
 
 - **Updates**: When Upwork changes their UI, check the `docs/architecture.md` for updated selector strategies.
 - **Log Inspection**: Open the console (`F12`) on Upwork to see the `[MatchIntel]` diagnostic logs.
-- **Intel Refresh**: Re-sync your profile whenever you add a new major project or skill to your Upwork profile.
+- **Intel Refresh**: Re-sync your profile (via the "⚡ Sync MY Intelligence" button) whenever you add a new major project or skill to your Upwork profile.
