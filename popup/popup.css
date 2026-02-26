@@ -1,6 +1,6 @@
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
@@ -67,6 +67,7 @@ body {
 }
 
 .brand h1 span {
+    font-weight: 400;
     color: var(--primary);
 }
 
@@ -92,8 +93,8 @@ body {
 }
 
 .tab-btn.active {
-    background: #ffffff;
-    color: var(--primary);
+    background: var(--primary);
+    color: #ffffff;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
 
@@ -110,10 +111,81 @@ body {
     padding: 20px;
 }
 
-/* Custom Scrollbar */
 .scrollable::-webkit-scrollbar { width: 6px; }
 .scrollable::-webkit-scrollbar-track { background: transparent; }
 .scrollable::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* Status Card & Profile Preview */
+.status-card {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.status-header h3 {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--success);
+}
+
+.profile-preview {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.profile-preview .name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.profile-preview .title {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+.text-link-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.pulse-dot.green {
+    background: var(--success);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
 
 .onboarding-card {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
@@ -138,6 +210,13 @@ body {
 
 .config-section {
     margin-bottom: 24px;
+}
+
+.config-section.main-core {
+    background: #fdf2ff;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid #f5d0fe;
 }
 
 .section-header {
@@ -180,7 +259,9 @@ body {
 
 input[type="text"],
 input[type="number"],
-textarea {
+input[type="password"],
+textarea,
+select {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid var(--border);
@@ -191,10 +272,10 @@ textarea {
     transition: all 0.2s;
 }
 
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .grid-row {
@@ -207,6 +288,11 @@ input:focus, textarea:focus {
     font-size: 11px;
     color: var(--text-light);
     margin-top: 4px;
+}
+
+.help-text.small {
+    font-size: 10px;
+    opacity: 0.7;
 }
 
 .view-footer {
@@ -241,29 +327,26 @@ input:focus, textarea:focus {
 }
 
 @keyframes pulse-animation {
-    0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
 }
 
 .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-top: 10px;
 }
 
-.checkbox-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.checkbox-wrapper input {
+.checkbox-row input {
     width: 16px;
     height: 16px;
 }
 
-.checkbox-wrapper label {
-    margin-bottom: 0;
+.checkbox-row label {
     font-size: 13px;
+    font-weight: 600;
     color: var(--text-main);
 }
 
@@ -282,11 +365,6 @@ input:focus, textarea:focus {
     transition: all 0.2s;
 }
 
-.job-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
 .job-header {
     display: flex;
     justify-content: space-between;
@@ -298,7 +376,6 @@ input:focus, textarea:focus {
     font-size: 14px;
     font-weight: 700;
     color: var(--text-main);
-    line-height: 1.4;
 }
 
 .score-pill {
@@ -309,51 +386,9 @@ input:focus, textarea:focus {
     font-weight: 800;
 }
 
-.job-card p {
-    font-size: 12px;
-    color: var(--text-light);
-    margin-bottom: 12px;
-    line-height: 1.5;
-}
-
-.job-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-light);
-}
-
-.job-footer {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.save-date {
-    font-size: 10px;
-    color: var(--text-light);
-}
-
-.auto-save-tag {
-    font-size: 9px;
-    font-weight: 800;
-    color: var(--primary);
-    text-transform: uppercase;
-}
-
 .empty-state {
     text-align: center;
     padding: 40px 20px;
-}
-
-.empty-state .icon {
-    font-size: 40px;
-    display: block;
-    margin-bottom: 15px;
 }
 
 .empty-state p {

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Match Intel</title>
+    <title>Upwork Match Intelligence</title>
     <link rel="stylesheet" href="popup.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,29 +16,57 @@
                 <h1>Match <span>Intel</span></h1>
             </div>
             <nav class="tabs">
-                <button id="tab-settings" class="tab-btn active">Intel Config</button>
-                <button id="tab-tracker" class="tab-btn">Opportunity Tracker</button>
+                <button id="tab-settings" class="tab-btn active">Strategic Config</button>
+                <button id="tab-tracker" class="tab-btn">Dossier Beta</button>
             </nav>
         </header>
 
         <main id="settings-view" class="view">
             <div class="view-content scrollable">
-                <div id="quick-start-notice" class="onboarding-card">
-                    <h3>Intelligent Onboarding</h3>
-                    <p>Sync your profile to calibrate the AI with your real-world expertise.</p>
-                    <button id="open-profile-btn" class="primary-btn pulse">Begin Deep Sync</button>
+                <!-- Profile Calibration Status -->
+                <div id="profile-status-card" class="status-card" style="display: none;">
+                    <div class="status-header">
+                        <span class="pulse-dot green"></span>
+                        <h3>Intelligence Calibrated</h3>
+                    </div>
+                    <div class="profile-preview">
+                        <div id="profile-name" class="name">---</div>
+                        <div id="profile-title" class="title">---</div>
+                    </div>
+                    <button id="resync-profile-btn" class="text-link-btn">Force Re-Calibration</button>
                 </div>
 
-                <section class="config-section">
+                <div id="quick-start-notice" class="onboarding-card">
+                    <h3>Synchronize DNA</h3>
+                    <p>Calibrate your profile to enable precision keyword extraction and automated scoring.</p>
+                    <button id="open-profile-btn" class="primary-btn pulse">Begin High-Alpha Sync</button>
+                </div>
+
+                <!-- Strategic Core: Identity & AI -->
+                <section class="config-section main-core">
                     <div class="section-header">
-                        <span class="dot"></span>
-                        <h2>Identity & Work Profile</h2>
+                        <span class="dot purple"></span>
+                        <h2>Core Intelligence Hub</h2>
                     </div>
                     <div class="input-group">
                         <label>Public Profile URL</label>
                         <input type="text" id="myProfileUrl" placeholder="https://www.upwork.com/freelancers/~...">
-                        <p class="help-text">Used for deep skill extraction and profile monitoring.</p>
                     </div>
+                    <div class="grid-row">
+                        <div class="input-group">
+                            <label>Primary AI Model</label>
+                            <select id="aiModel" class="premium-select">
+                                <option value="none">Heuristics Only</option>
+                                <option value="gemini">Google Gemini 1.5</option>
+                                <option value="openai">OpenAI GPT-4o</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>AI API Key</label>
+                            <input type="password" id="aiKey" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <p class="help-text small">Keys are encrypted and stored in local chrome sync storage.</p>
                 </section>
 
                 <section class="config-section">
@@ -48,84 +76,57 @@
                     </div>
                     <div class="grid-row">
                         <div class="input-group">
-                            <label>$/hr Min</label>
+                            <label>$/hr Floor</label>
                             <input type="number" id="hourlyRateMin" placeholder="30">
                         </div>
                         <div class="input-group">
-                            <label>$/hr Max</label>
+                            <label>$/hr Target</label>
                             <input type="number" id="hourlyRateMax" placeholder="100">
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>Fixed Budget Floor ($)</label>
-                        <input type="number" id="budgetMin" placeholder="500">
-                    </div>
-                </section>
-
-                <section class="config-section">
-                    <div class="section-header">
-                        <span class="dot purple"></span>
-                        <h2>Intel Keywords & Geography</h2>
-                    </div>
-                    <div class="input-group">
-                        <label>Target Expertise (comma separated)</label>
-                        <textarea id="keywords" rows="3" placeholder="React, Node.js, AI Systems..."></textarea>
-                    </div>
-                    <div class="input-group">
-                        <label>Preferred Regions</label>
-                        <input type="text" id="locations" placeholder="USA, United Kingdom, European Union">
-                    </div>
-                    <div class="input-group">
-                        <label>Red Flag Locations (Auto-Penalty)</label>
-                        <input type="text" id="blacklistedLocations" placeholder="Pakistan, India, Bangladesh (Exclude from high-alpha)">
-                        <p class="help-text">Jobs from these regions will get a -25 point penalty.</p>
+                        <label>Fixed Budget Minimum ($)</label>
+                        <input type="number" id="budgetMin" placeholder="1000">
                     </div>
                 </section>
 
                 <section class="config-section">
                     <div class="section-header">
                         <span class="dot blue"></span>
-                        <h2>Automation & Alpha Alerts</h2>
+                        <h2>Skill Vectors & Filter</h2>
                     </div>
                     <div class="input-group">
-                        <label>Alpha Threshold (%)</label>
-                        <input type="number" id="minScoreToNotify" min="0" max="100" placeholder="85">
-                        <p class="help-text">Threshold for auto-saving and notifications.</p>
-                    </div>
-                    <div class="input-group checkbox-row">
-                        <div class="checkbox-wrapper">
-                            <input type="checkbox" id="autoSaveEnabled">
-                            <label for="autoSaveEnabled">Auto-Save matches above threshold</label>
-                        </div>
+                        <label>Expertise Matrix (Comma separated keywords)</label>
+                        <textarea id="keywords" rows="2" placeholder="AI Architect, React Specialist..."></textarea>
                     </div>
                     <div class="input-group">
-                        <label>Auto-Reload Feed (Minutes)</label>
-                        <input type="number" id="reloadInterval" min="0" max="60" placeholder="0 = Disabled">
-                        <p class="help-text">Refreshes the page to find new jobs.</p>
+                        <label>Preferred Regions</label>
+                        <input type="text" id="locations" placeholder="USA, UK, EU">
                     </div>
                     <div class="input-group">
-                        <label>Webhook Hub (Discord/Telegram)</label>
-                        <input type="text" id="webhookUrl" placeholder="https://discord.com/api/webhooks/...">
+                        <label>Blacklisted Zones</label>
+                        <input type="text" id="blacklistedLocations" placeholder="Pakistan, India...">
                     </div>
                 </section>
 
-                <section class="config-section">
+                <section class="config-section compact">
                     <div class="section-header">
-                        <span class="dot green"></span>
-                        <h2>AI Intelligence (LLM Configuration)</h2>
+                        <span class="dot"></span>
+                        <h2>Automation Settings</h2>
                     </div>
-                    <div class="input-group">
-                        <label>Primary Engine</label>
-                        <select id="aiModel" class="premium-select">
-                            <option value="none">Disabled (Calculation Only)</option>
-                            <option value="gemini">Google Gemini (Highly Recommended)</option>
-                            <option value="openai">OpenAI ChatGPT</option>
-                        </select>
+                    <div class="grid-row">
+                        <div class="input-group">
+                            <label>Notify Threshold (%)</label>
+                            <input type="number" id="minScoreToNotify" min="0" max="100" placeholder="85">
+                        </div>
+                        <div class="input-group">
+                            <label>Auto-Reload (Min)</label>
+                            <input type="number" id="reloadInterval" min="0" max="60" placeholder="0">
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>API Access Key</label>
-                        <input type="password" id="aiKey" placeholder="sk-...">
-                        <p class="help-text">Keys are stored locally in your browser sync storage.</p>
+                    <div class="input-group checkbox-row">
+                        <input type="checkbox" id="autoSaveEnabled">
+                        <label for="autoSaveEnabled">Auto-Track High Alpha Opportunities</label>
                     </div>
                 </section>
             </div>
@@ -137,8 +138,7 @@
         <main id="tracker-view" class="view" style="display: none;">
             <div id="saved-jobs-list" class="jobs-list scrollable">
                 <div class="empty-state">
-                    <span class="icon">🔍</span>
-                    <p>No high-alpha opportunities tracked yet.</p>
+                    <p>No high-alpha opportunities tracked in current session.</p>
                 </div>
             </div>
         </main>

@@ -227,20 +227,29 @@ class UpworkEngine {
     this.runCycle();
 
     const observer = new MutationObserver(() => {
+      if (!chrome.runtime?.id) return;
       clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => this.runCycle(), 600);
+      this.debounceTimer = setTimeout(() => {
+        if (!chrome.runtime?.id) return;
+        this.runCycle();
+      }, 600);
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'sync' && changes.settings) {
-        log('Hot-reloading settings...');
-        this.scorer.settings = changes.settings.newValue;
-        this.setupAutoReload();
-        document.querySelectorAll(SELECTORS.JOB_TILE).forEach(tile => {
-            delete tile.dataset.matchProcessed;
-        });
-        this.runCycle();
+      try {
+        if (!chrome.runtime?.id) return;
+        if (area === 'sync' && changes.settings) {
+          log('Hot-reloading settings...');
+          this.scorer.settings = changes.settings.newValue;
+          this.setupAutoReload();
+          document.querySelectorAll(SELECTORS.JOB_TILE).forEach(tile => {
+              delete tile.dataset.matchProcessed;
+          });
+          this.runCycle();
+        }
+      } catch (e) {
+        log('Context lost in storage listener');
       }
     });
 
@@ -286,7 +295,14 @@ class UpworkEngine {
        const jobId = jobIdMatch[0];
 
        // Check if we already have recent intel for this job
-       const { deepIntel = {} } = await chrome.storage.local.get('deepIntel');
+       let intelData;
+       try {
+           if (!chrome.runtime?.id) break;
+           const result = await chrome.storage.local.get('deepIntel');
+           intelData = result.deepIntel || {};
+       } catch (e) { break; }
+
+       const { deepIntel = intelData } = { deepIntel: intelData };
        if (deepIntel[jobId] && (new Date() - new Date(deepIntel[jobId].updated) < 3 * 60 * 60 * 1000)) {
            this.applyDeepIntelToTile(tile, deepIntel[jobId]);
            tile.dataset.miDeepProcessed = 'true';
@@ -297,12 +313,16 @@ class UpworkEngine {
        tile.dataset.miDeepProcessed = 'true';
        log(`Auto-fetching deep intel for ${jobId}...`);
        
-       chrome.runtime.sendMessage({ type: 'FETCH_JOB_DETAILS', url: link }, (response) => {
-          if (response?.html) {
-             const intel = this.parseIntelFromHtml(response.html);
-             this.syncDeepIntel(jobId, intel);
-          }
-       });
+       try {
+           if (!chrome.runtime?.id) break;
+           chrome.runtime.sendMessage({ type: 'FETCH_JOB_DETAILS', url: link }, (response) => {
+              if (!chrome.runtime?.id) return;
+              if (response?.html) {
+                 const intel = this.parseIntelFromHtml(response.html);
+                 this.syncDeepIntel(jobId, intel);
+              }
+           });
+       } catch (e) { break; }
 
        // Wait a bit before next fetch to be "human-like"
        await new Promise(r => setTimeout(r, 5000));
@@ -474,7 +494,7 @@ class UpworkEngine {
           const lastSync = settings.profileSummary?.lastSync;
           const forceSync = window.location.search.includes('mi-force-sync');
           if (forceSync || !lastSync || (new Date() - new Date(lastSync) > 12 * 60 * 60 * 1000)) {
-            this.syncProfile();
+            if (chrome.runtime?.id) this.syncProfile();
           }
         }
     } catch (e) {
@@ -722,14 +742,20 @@ class UpworkEngine {
   }
 
   async saveJob(jobData) {
-    const { savedJobs = [] } = await chrome.storage.local.get("savedJobs");
-    if (!savedJobs.some((j) => j.link === jobData.link)) {
-      savedJobs.push({ ...jobData, savedAt: new Date().toISOString() });
-      await chrome.storage.local.set({ savedJobs });
+    if (!chrome.runtime?.id) return;
+    try {
+        const { savedJobs = [] } = await chrome.storage.local.get("savedJobs");
+        if (chrome.runtime?.id && !savedJobs.some((j) => j.link === jobData.link)) {
+            savedJobs.push({ ...jobData, savedAt: new Date().toISOString() });
+            await chrome.storage.local.set({ savedJobs });
+        }
+    } catch (e) {
+        log('Context lost in saveJob');
     }
   }
 
   notifyHighMatch(jobData, score) {
+    if (!chrome.runtime?.id) return;
     if (this.processedJobs.has(jobData.link)) return;
     this.processedJobs.add(jobData.link);
     chrome.runtime.sendMessage({ type: "NOTIFY_HIGH_MATCH", jobData, score });
@@ -758,12 +784,16 @@ class UpworkEngine {
       const adviceStrip = tile.querySelector('.mi-advice-strip');
 
       if (btn.classList.contains('mi-loading')) return;
+      if (!chrome.runtime?.id) return;
 
       btn.classList.add('mi-loading');
       adviceStrip.innerHTML = '<span class="mi-spinner"></span> Consultant is analyzing job depth...';
       
       try {
+          if (!chrome.runtime?.id) throw new Error('Context lost');
           const { settings = {} } = await chrome.storage.sync.get('settings');
+          
+          if (!chrome.runtime?.id) throw new Error('Context lost');
           const response = await chrome.runtime.sendMessage({
               type: 'AI_GET_ALPHA_INSIGHT',
               jobData,

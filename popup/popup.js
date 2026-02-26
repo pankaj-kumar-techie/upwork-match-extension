@@ -30,9 +30,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Existing Settings
     const { settings = {} } = await chrome.storage.sync.get('settings');
     const notice = document.getElementById('quick-start-notice');
+    const statusCard = document.getElementById('profile-status-card');
+    const resyncBtn = document.getElementById('resync-profile-btn');
 
-    if (settings.keywords?.length > 0) {
+    // UI State Management (Onboarding vs Calibrated)
+    if (settings.profileSummary?.lastSync) {
         notice.style.display = 'none';
+        statusCard.style.display = 'block';
+        document.getElementById('profile-name').innerText = settings.profileSummary.profileName || 'Anonymous Intel';
+        document.getElementById('profile-title').innerText = settings.profileSummary.title || 'Generalist';
+    } else {
+        notice.style.display = 'block';
+        statusCard.style.display = 'none';
     }
 
     // Populate Fields
@@ -43,20 +52,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('keywords').value = (settings.keywords || []).join(', ');
     document.getElementById('locations').value = (settings.locations || []).join(', ');
     document.getElementById('blacklistedLocations').value = (settings.blacklistedLocations || []).join(', ');
-    document.getElementById('webhookUrl').value = settings.webhookUrl || '';
     document.getElementById('minScoreToNotify').value = settings.minScoreToNotify || 85;
     document.getElementById('reloadInterval').value = settings.reloadInterval || 0;
     document.getElementById('autoSaveEnabled').checked = settings.autoSaveEnabled !== false;
     document.getElementById('aiModel').value = settings.aiModel || 'none';
     document.getElementById('aiKey').value = settings.aiKey || '';
 
-    // Begin Sync (Redirect to Profile)
-    openProfileBtn.onclick = () => {
+    // Calibration Triggers
+    const triggerSync = () => {
         let url = settings.myProfileUrl || 'https://www.upwork.com/nx/find-work/';
         if (url.includes('?')) url += '&mi-force-sync=true';
         else url += '?mi-force-sync=true';
         chrome.tabs.create({ url });
     };
+
+    openProfileBtn.onclick = triggerSync;
+    resyncBtn.onclick = triggerSync;
 
     // Save Configurations
     saveBtn.onclick = async () => {
@@ -68,7 +79,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             keywords: document.getElementById('keywords').value.split(',').map(k => k.trim()).filter(k => k),
             locations: document.getElementById('locations').value.split(',').map(l => l.trim()).filter(l => l),
             blacklistedLocations: document.getElementById('blacklistedLocations').value.split(',').map(l => l.trim()).filter(l => l),
-            webhookUrl: document.getElementById('webhookUrl').value.trim(),
             minScoreToNotify: parseInt(document.getElementById('minScoreToNotify').value) || 85,
             reloadInterval: parseInt(document.getElementById('reloadInterval').value) || 0,
             autoSaveEnabled: document.getElementById('autoSaveEnabled').checked,
@@ -76,16 +86,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             aiKey: document.getElementById('aiKey').value.trim()
         };
 
-        // Preserve system-only settings
         const finalSettings = { ...settings, ...newSettings };
-        
         await chrome.storage.sync.set({ settings: finalSettings });
         
         saveBtn.innerText = '✨ Configurations Deployed!';
         saveBtn.style.background = '#10b981';
         
-        if (newSettings.keywords.length > 0) notice.style.display = 'none';
-
         setTimeout(() => {
             saveBtn.innerText = 'Deploy Configurations';
             saveBtn.style.background = '';
