@@ -6,12 +6,6 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'NOTIFY_HIGH_MATCH') {
     handleHighMatch(message.jobData, message.score);
-  } else if (message.type === 'FETCH_JOB_DETAILS') {
-    fetch(message.url)
-      .then(response => response.text())
-      .then(html => sendResponse({ html }))
-      .catch(error => sendResponse({ error: error.message }));
-    return true; // Keep channel open for async response
   } else if (message.type === 'AI_GET_ALPHA_INSIGHT') {
     handleAIRequest(message.jobData, message.profileSummary)
       .then(insight => sendResponse({ insight }))
@@ -106,8 +100,9 @@ chrome.notifications.onClicked.addListener((notificationId) => {
 
 async function handleHighMatch(jobData, score) {
   const { settings = {} } = await chrome.storage.sync.get('settings');
-  
-  // 1. Show dynamic notification
+
+  // 1. Show a desktop alert so you can target the job (based on what is
+  //    already visible on the feed page you are browsing).
   chrome.notifications.create(jobData.link, { // Use link as ID
     type: 'basic',
     iconUrl: 'icons/icon128.png',
@@ -117,22 +112,8 @@ async function handleHighMatch(jobData, score) {
     priority: 2
   });
 
-  // 2. Auto-Save to Tracker (MNC Grade Automation)
-  if (settings.autoSaveEnabled !== false) {
-    log(`Auto-saving high match job: ${jobData.title}`);
-    const { savedJobs = [] } = await chrome.storage.local.get('savedJobs');
-    if (!savedJobs.some(j => j.link === jobData.link)) {
-        savedJobs.push({ 
-            ...jobData, 
-            score,
-            savedAt: new Date().toISOString(),
-            isAutoSaved: true 
-        });
-        await chrome.storage.local.set({ savedJobs });
-    }
-  }
-
-  // 3. Webhook handling
+  // 2. Optional webhook (only fires if you explicitly configured one).
+  //    Keep the payload minimal: title, budget, and the public job link.
   if (settings.webhookUrl) {
     sendWebhook(settings.webhookUrl, jobData, score);
   }

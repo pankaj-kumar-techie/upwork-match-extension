@@ -285,7 +285,6 @@ class UpworkEngine {
         if (area === 'sync' && changes.settings) {
           log('Hot-reloading settings...');
           this.scorer.settings = changes.settings.newValue;
-          this.setupAutoReload();
           document.querySelectorAll(SELECTORS.JOB_TILE).forEach(tile => {
               delete tile.dataset.matchProcessed;
           });
@@ -296,28 +295,15 @@ class UpworkEngine {
       }
     });
 
-    // Keyboard Shortcut Logic (Ctrl+Alt+M)
+    // Keyboard Shortcut: Ctrl+Alt+M toggles the visibility of injected panels
+    // (purely a local UI convenience — does not change Upwork or hide activity).
     window.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'm') {
-            document.body.classList.toggle('mi-stealth');
-            const isStealth = document.body.classList.contains('mi-stealth');
-            log(`Stealth Mode: ${isStealth ? 'ON' : 'OFF'}`);
+            document.body.classList.toggle('mi-hide-panels');
+            const isHidden = document.body.classList.contains('mi-hide-panels');
+            log(`Panels hidden: ${isHidden ? 'ON' : 'OFF'}`);
         }
     });
-
-    this.setupAutoReload();
-  }
-
-  setupAutoReload() {
-    if (this.reloadTimeout) clearTimeout(this.reloadTimeout);
-    const interval = this.scorer.settings.reloadInterval || 0;
-    if (interval > 0) {
-      log(`Auto-Reload scheduled in ${interval} minutes...`);
-      this.reloadTimeout = setTimeout(() => {
-          // Force reload even if hidden to keep feed fresh for when user returns
-          window.location.reload();
-      }, interval * 60 * 1000);
-    }
   }
 
   runCycle() {
@@ -331,59 +317,10 @@ class UpworkEngine {
     }
     this.scanAndProcess();
     this.scrapeModalIfOpen();
-    this.autoFetchDeepIntel(); // Background lazy-fetcher for God View
   }
 
-  // LAZY BACKGROUND FETCHER - Automatically gets data for the "God View"
-  async autoFetchDeepIntel() {
-    const tiles = document.querySelectorAll(SELECTORS.JOB_TILE);
-    for (const tile of tiles) {
-       if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
-       const link = tile.querySelector(SELECTORS.TITLE)?.href;
-       if (!link || tile.dataset.miDeepProcessed) continue;
-
-       const jobIdMatch = link.match(/~[0-9a-f]+/i);
-       if (!jobIdMatch) continue;
-       const jobId = jobIdMatch[0];
-
-       // Check if we already have recent intel for this job
-       let intelData;
-       try {
-           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
-           const result = await chrome.storage.local.get('deepIntel');
-           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
-           intelData = result.deepIntel || {};
-       } catch (e) { break; }
-
-       const { deepIntel = intelData } = { deepIntel: intelData };
-       if (deepIntel[jobId] && (new Date() - new Date(deepIntel[jobId].updated) < 3 * 60 * 60 * 1000)) {
-           this.applyDeepIntelToTile(tile, deepIntel[jobId]);
-           tile.dataset.miDeepProcessed = 'true';
-           continue;
-       }
-
-       // Lazily fetch one at a time to avoid rate limits
-       tile.dataset.miDeepProcessed = 'true';
-       log(`Auto-fetching deep intel for ${jobId}...`);
-       
-       try {
-           if (typeof chrome === 'undefined' || !chrome.runtime?.id) break;
-           chrome.runtime.sendMessage({ type: 'FETCH_JOB_DETAILS', url: link }, (response) => {
-              // Heartbeat check for invalidated context
-              if (typeof chrome === 'undefined' || !chrome.runtime?.id) return;
-              
-              if (response?.html) {
-                 const intel = this.parseIntelFromHtml(response.html);
-                 if (intel) this.syncDeepIntel(jobId, intel);
-              }
-           });
-       } catch (e) { break; }
-
-       // Wait a bit before next fetch to be "human-like"
-       await new Promise(r => setTimeout(r, 5000));
-    }
-  }
-
+  // Parses the details of a job from a modal/panel the user has opened on the
+  // page they are viewing. No background page fetching is performed.
   parseIntelFromHtml(html) {
     if (!html) return null;
     const parser = new DOMParser();
@@ -445,19 +382,11 @@ class UpworkEngine {
     let memberSinceValue = qaMember?.innerText.match(/Member since (.+)/i)?.[1];
     let locationValue = qaLocation?.querySelector('strong')?.innerText.trim();
 
-    let preloadedState = null;
-    try {
-        const stateMatch = html.match(/window\.__PRELOADED_STATE__\s*=\s*({.*?});/s);
-        if (stateMatch) preloadedState = JSON.parse(stateMatch[1]);
-    } catch (e) {}
+    // Backfill from the rendered text of the opened panel only.
+    if (!hireRateValue) hireRateValue = (html.match(/(\d+)%\s*hire rate/i)?.[1]);
+    if (!totalSpentValue) totalSpentValue = (html.match(/\$([0-9KkMm+.,]+)\s+total spent/i)?.[1]);
+    if (!avgRateValue) avgRateValue = (html.match(/\$([0-9.]+)\s+\/hr\s+avg hourly rate paid/i)?.[1]);
 
-    const jobState = preloadedState?.job;
-    const clientState = jobState?.client;
-
-    if (!hireRateValue) hireRateValue = clientState?.statistics?.hireRate || (html.match(/\"hireRate\":(\d+)/)?.[1]) || (html.match(/(\d+)%\s*hire rate/i)?.[1]);
-    if (!totalSpentValue) totalSpentValue = clientState?.statistics?.totalSpent || (html.match(/\"totalSpent\":(\d+)/)?.[1]) || (html.match(/\$([0-9KkMm+.,]+)\s+total spent/i)?.[1]);
-    if (!avgRateValue) avgRateValue = clientState?.statistics?.hourlyRatePaidAvg || (html.match(/\"hourlyRatePaidAvg\":([0-9.]+)/)?.[1]);
-    
     const hireRateMatch = html.match(/(\d+)%\s*(?:hire rate|hire)/i) || html.match(/hire rate:\s*(\d+)%/i);
     const spendMatch = html.match(/\$([0-9KkMm+.,]+)(?:\+)?\s+(?:total spent|spent)/i) || html.match(/spent:\s*\$([0-9KkMm+.,]+)/i);
     const avgRateMatch = html.match(/\$([0-9.]+)\s+\/hr\s+avg hourly rate paid/i) || html.match(/avg hourly rate paid:\s*\$([0-9.]+)/i);
@@ -518,15 +447,15 @@ class UpworkEngine {
         location: locationValue || location,
         mandatorySkills,
         hireRate: (hireRateValue !== undefined && hireRateValue !== null && hireRateValue !== "") ? parseInt(hireRateValue) : (hireMatch ? parseInt(hireMatch[1]) : (hireRateMatch ? parseInt(hireRateMatch[1]) : null)),
-        clientSpend: (totalSpentValue !== undefined && totalSpentValue !== null) ? (totalSpentValue.toString().includes('$') ? totalSpentValue : "$" + totalSpentValue) : (totalSpendMatch ? "$" + totalSpendMatch[1] : (spendMatch ? "$" + spendMatch[1] : null)),
+        clientSpend: (totalSpentValue !== undefined && totalSpentValue !== null) ? (totalSpentValue.toString().includes('$') ? totalSpentValue : "$" + totalSpentValue) : (spendMatch ? "$" + spendMatch[1] : null),
         avgRatePaid: (avgRateValue !== undefined && avgRateValue !== null) ? "$" + avgRateValue : (avgRateMatch ? "$" + avgRateMatch[1] : null),
-        avgRating: (ratingValue !== undefined && ratingValue !== null) ? ratingValue.toString() : (ratingMatch ? ratingMatch[1] : null),
+        avgRating: ratingMatch ? ratingMatch[1] : null,
         memberSince: memberSinceValue || (memberSinceMatch ? memberSinceMatch[ memberSinceMatch.length - 1 ] : null),
         jobsPosted: jobsPosted || (jobsPostedMatch ? jobsPostedMatch[1] : null),
         totalHires: totalHires || (hiresMatch ? hiresMatch[1] : null),
         activeHires: activeHires || (activeMatch ? activeMatch[1] : null),
         totalHours: totalHours || (hoursMatch ? hoursMatch[1] : null),
-        paymentVerified: preloadedState?.job?.client?.paymentVerificationStatus === 1 || html.includes('Payment method verified'),
+        paymentVerified: html.includes('Payment method verified'),
         connectsRequired: connectsMatch ? connectsMatch[1] : null,
         availableConnects: availableMatch ? availableMatch[1] : null,
         activity,
@@ -1030,7 +959,7 @@ class UpworkEngine {
       const btn = tile.querySelector('.mi-ai-action');
       const alphaSidebar = tile.querySelector('.mi-panel-sidebar');
       const scoreCircle = tile.querySelector('.mi-score-circle');
-      const adviceStrip = tile.querySelector('.mi-advice-strip');
+      const adviceStrip = tile.querySelector('.mi-verdict-message');
 
       if (btn.classList.contains('mi-loading')) return;
       if (!chrome.runtime?.id) return;

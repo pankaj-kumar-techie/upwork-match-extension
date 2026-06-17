@@ -322,12 +322,12 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Stealth Mode Toggle */
-.mi-stealth .match-intelligence-badge {
+/* Hide-panels toggle (Ctrl+Alt+M) — local UI visibility only */
+.mi-hide-panels .match-intelligence-badge {
     display: none !important;
 }
 
-.mi-stealth .mi-high-match-v2 {
+.mi-hide-panels .mi-high-match-v2 {
     border: none !important;
     background: transparent !important;
 }

@@ -112,22 +112,25 @@
                 <section class="config-section compact">
                     <div class="section-header">
                         <span class="dot"></span>
-                        <h2>Automation Settings</h2>
+                        <h2>Alert Settings</h2>
                     </div>
-                    <div class="grid-row">
-                        <div class="input-group">
-                            <label>Notify Threshold (%)</label>
-                            <input type="number" id="minScoreToNotify" min="0" max="100" placeholder="85">
-                        </div>
-                        <div class="input-group">
-                            <label>Auto-Reload (Min)</label>
-                            <input type="number" id="reloadInterval" min="0" max="60" placeholder="0">
-                        </div>
+                    <div class="input-group">
+                        <label>Notify Threshold (%)</label>
+                        <input type="number" id="minScoreToNotify" min="0" max="100" placeholder="85">
                     </div>
-                    <div class="input-group checkbox-row">
-                        <input type="checkbox" id="autoSaveEnabled">
-                        <label for="autoSaveEnabled">Auto-Track High Alpha Opportunities</label>
+                    <p class="help-text small">You get a desktop alert when a job on the page you're browsing scores at or above this. Save jobs you want to target with the bookmark button on each card.</p>
+                </section>
+
+                <section class="config-section compact">
+                    <div class="section-header">
+                        <span class="dot"></span>
+                        <h2>Optional Webhook</h2>
                     </div>
+                    <div class="input-group">
+                        <label>Webhook URL (Discord / Telegram)</label>
+                        <input type="text" id="webhookUrl" placeholder="Leave blank to disable">
+                    </div>
+                    <p class="help-text small">If set, high-match alerts are also sent here (title, budget, and public job link only).</p>
                 </section>
             </div>
             <footer class="view-footer">

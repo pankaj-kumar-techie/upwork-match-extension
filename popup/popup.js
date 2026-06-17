@@ -53,8 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('locations').value = (settings.locations || []).join(', ');
     document.getElementById('blacklistedLocations').value = (settings.blacklistedLocations || []).join(', ');
     document.getElementById('minScoreToNotify').value = settings.minScoreToNotify || 85;
-    document.getElementById('reloadInterval').value = settings.reloadInterval || 0;
-    document.getElementById('autoSaveEnabled').checked = settings.autoSaveEnabled !== false;
+    document.getElementById('webhookUrl').value = settings.webhookUrl || '';
     document.getElementById('aiModel').value = settings.aiModel || 'none';
     document.getElementById('aiKey').value = settings.aiKey || '';
 
@@ -80,8 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             locations: document.getElementById('locations').value.split(',').map(l => l.trim()).filter(l => l),
             blacklistedLocations: document.getElementById('blacklistedLocations').value.split(',').map(l => l.trim()).filter(l => l),
             minScoreToNotify: parseInt(document.getElementById('minScoreToNotify').value) || 85,
-            reloadInterval: parseInt(document.getElementById('reloadInterval').value) || 0,
-            autoSaveEnabled: document.getElementById('autoSaveEnabled').checked,
+            webhookUrl: document.getElementById('webhookUrl').value.trim(),
             aiModel: document.getElementById('aiModel').value,
             aiKey: document.getElementById('aiKey').value.trim()
         };
