@@ -51,6 +51,7 @@
                     <div class="input-group">
                         <label>Public Profile URL</label>
                         <input type="text" id="myProfileUrl" placeholder="https://www.upwork.com/freelancers/~...">
+                        <span class="parse-hint" id="profile-url-hint"></span>
                     </div>
                     <div class="grid-row">
                         <div class="input-group">
@@ -66,7 +67,7 @@
                             <input type="password" id="aiKey" placeholder="••••••••">
                         </div>
                     </div>
-                    <p class="help-text small">Keys are encrypted and stored in local chrome sync storage.</p>
+                    <p class="help-text small">🔒 Optional. Your key is stored locally on this device only — never cloud-synced, and only ever sent to the AI provider you choose. The extension has no server.</p>
                 </section>
 
                 <section class="config-section">
@@ -98,10 +99,12 @@
                     <div class="input-group">
                         <label>Expertise Matrix (Comma separated keywords)</label>
                         <textarea id="keywords" rows="2" placeholder="AI Architect, React Specialist..."></textarea>
+                        <span class="parse-hint" id="keywords-hint"></span>
                     </div>
                     <div class="input-group">
                         <label>Preferred Regions</label>
                         <input type="text" id="locations" placeholder="USA, UK, EU">
+                        <span class="parse-hint" id="locations-hint"></span>
                     </div>
                     <div class="input-group">
                         <label>Blacklisted Zones</label>
@@ -135,13 +138,15 @@
             </div>
             <footer class="view-footer">
                 <button id="save-settings" class="primary-btn full-width">Deploy Configurations</button>
+                <button id="reset-settings" class="text-link-btn danger">Reset all settings</button>
             </footer>
         </main>
 
         <main id="tracker-view" class="view" style="display: none;">
             <div id="saved-jobs-list" class="jobs-list scrollable">
                 <div class="empty-state">
-                    <p>No high-alpha opportunities tracked in current session.</p>
+                    <span class="icon">🔖</span>
+                    <p>No jobs tracked yet. Open an Upwork jobs feed and click the bookmark icon on any scored card to save it here.</p>
                 </div>
             </div>
         </main>

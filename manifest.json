@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Upwork Match Intelligence",
-  "version": "1.0.0",
-  "description": "AI-powered job matching for Upwork. Highlight best matches and track jobs.",
+  "version": "1.1.0",
+  "description": "Private, on-page job scoring for Upwork. Honest match scores that flag Connect-wasters before you bid. Local-only, no scraping.",
   "permissions": ["storage", "notifications", "tabs"],
   "host_permissions": ["https://www.upwork.com/*"],
   "action": {

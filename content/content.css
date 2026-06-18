@@ -332,8 +332,103 @@
     background: transparent !important;
 }
 
+/* "Don't waste Connects" warning */
+.mi-skip-warning {
+    margin: 8px 0;
+    padding: 8px 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 3px solid #dc2626;
+    border-radius: 6px;
+}
+
+.mi-skip-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: #b91c1c;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.mi-skip-list {
+    margin: 5px 0 0;
+    padding-left: 16px;
+}
+
+.mi-skip-list li {
+    font-size: 11px;
+    color: #7f1d1d;
+    margin: 2px 0;
+}
+
+/* "Why this score?" breakdown */
+.mi-breakdown {
+    margin: 6px 0;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 6px;
+}
+
+.mi-breakdown summary {
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #4f46e5;
+    list-style: none;
+}
+
+.mi-breakdown summary::-webkit-details-marker { display: none; }
+
+.mi-bd-body {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mi-bd-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.mi-bd-delta {
+    flex: 0 0 32px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.mi-bd-delta.pos { color: #059669; }
+.mi-bd-delta.neg { color: #dc2626; }
+
+.mi-bd-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.mi-bd-text strong {
+    font-size: 11px;
+    color: #0f172a;
+}
+
+.mi-bd-reason {
+    font-size: 10px;
+    color: #64748b;
+}
+
 @media (prefers-color-scheme: dark) {
     .mi-strategic-panel { background: #1e293b; border-color: #334155; }
+    .mi-skip-warning { background: #450a0a; border-color: #7f1d1d; }
+    .mi-skip-title { color: #fca5a5; }
+    .mi-skip-list li { color: #fecaca; }
+    .mi-breakdown { border-color: #334155; }
+    .mi-bd-text strong { color: #f1f5f9; }
+    .mi-bd-reason { color: #94a3b8; }
     .mi-advice-strip { background: #0f172a; color: #f1f5f9; border-color: #1e293b; }
     .mi-match-rationale { color: #64748b; border-color: #334155; }
     .mi-dossier-item .value { color: #f1f5f9; }

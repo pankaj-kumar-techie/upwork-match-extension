@@ -58,13 +58,24 @@ class JobScorer {
   }
 
   calculateScore(jobData) {
+    // Every signal that moves the score is recorded as a contribution so the UI
+    // can show an honest "why this score" breakdown instead of a black-box number.
+    const contributions = [];
     let score = 35; // Base confidence score
+    contributions.push({ label: 'Base score', delta: 35, reason: 'Starting confidence baseline' });
+
+    const add = (delta, label, reason) => {
+      score += delta;
+      contributions.push({ label, delta, reason });
+    };
+    // Records a 0-delta note (shown as context, not scored).
+    const note = (label, reason) => contributions.push({ label, delta: 0, reason });
 
     // 1. Critical Filter: Payment Verification (Core Trust)
     if (!jobData.paymentVerified) {
-      score -= 20; // Heavy penalty for unverified payments - Professionals avoid these
+      add(-20, 'Payment unverified', 'No verified billing method — professionals avoid these');
     } else {
-      score += 10; // Reward for verified payment
+      add(10, 'Payment verified', 'Client billing method confirmed');
     }
 
     // 2. High Precision Skills & Keyword Match (Max +40%)
@@ -74,10 +85,10 @@ class JobScorer {
     const jobText = `${jobData.title} ${jobData.description}`.toLowerCase();
 
     // Check direct skill overlaps
-    const skillMatches = jobSkills.filter(skill => 
+    const skillMatches = jobSkills.filter(skill =>
       profileKeywords.some(p => p.includes(skill) || skill.includes(p))
     );
-    
+
     // Check keyword presence in text
     profileKeywords.forEach(kw => {
       if (jobText.includes(kw)) {
@@ -88,88 +99,97 @@ class JobScorer {
     const uniqueMatches = new Set([...skillMatches, ...matchedKeywords]);
     const matchCount = uniqueMatches.size;
     const matchRatio = matchCount / Math.min(profileKeywords.length || 1, 10);
-    score += Math.min(matchRatio * 40, 40);
+    const skillDelta = Math.min(matchRatio * 40, 40);
+    if (matchCount > 0) {
+      add(skillDelta, `Skills aligned (${matchCount})`, `Matched: ${Array.from(uniqueMatches).slice(0, 6).join(', ')}`);
+    } else if (profileKeywords.length > 0) {
+      note('No skill overlap', 'None of your expertise keywords appear here');
+    } else {
+      note('Profile not synced', 'Sync your Upwork profile to enable skill matching');
+    }
 
     // 2b. Mandatory Skill Lockdown
     if (jobData.mandatorySkills && jobData.mandatorySkills.length > 0) {
-        const missingMandatory = jobData.mandatorySkills.filter(s => 
+        const missingMandatory = jobData.mandatorySkills.filter(s =>
             !profileKeywords.some(p => p.includes(s.toLowerCase()) || s.toLowerCase().includes(p))
         );
         if (missingMandatory.length > 0) {
-            score -= (missingMandatory.length * 15); // Heavy penalty for missing mandatory requirements
+            add(missingMandatory.length * -15, `Missing mandatory skill${missingMandatory.length > 1 ? 's' : ''}`, `Client requires: ${missingMandatory.join(', ')}`);
         }
     }
 
     // 3. Financial Alignment (+15%)
     if (jobData.type === 'Hourly') {
       if (jobData.rateMin >= this.settings.hourlyRateMin && jobData.rateMax <= this.settings.hourlyRateMax) {
-        score += 15;
+        add(15, 'Rate in target band', `$${jobData.rateMin}-$${jobData.rateMax}/hr fits your range`);
       } else if (jobData.rateMax < this.settings.hourlyRateMin && jobData.rateMax > 0) {
-        score -= 15; // Underpriced penalty
+        add(-15, 'Underpriced', `Max $${jobData.rateMax}/hr is below your $${this.settings.hourlyRateMin}/hr floor`);
       } else if (jobData.rateMin >= this.settings.hourlyRateMin) {
-        score += 10; // Floor met
+        add(10, 'Meets rate floor', `Starts at $${jobData.rateMin}/hr`);
       }
     } else if (jobData.type === 'Fixed-price') {
       if (jobData.budget >= this.settings.budgetMin) {
-        score += 15;
+        add(15, 'Budget meets minimum', `$${jobData.budget} ≥ your $${this.settings.budgetMin} floor`);
       } else if (jobData.budget > 0 && jobData.budget < this.settings.budgetMin * 0.4) {
-        score -= 10; // Deeply underpriced
+        add(-10, 'Budget too low', `$${jobData.budget} is far below your $${this.settings.budgetMin} minimum`);
       }
     }
 
     // 4. Client Maturity & Hire Rate (+15%)
     if (jobData.clientSpend.toLowerCase().includes('k') || jobData.clientSpend.toLowerCase().includes('m')) {
-      score += 7;
+      add(7, 'Proven spender', `Client has spent ${jobData.clientSpend}`);
     }
     if (jobData.hireRate > 75) {
-      score += 8;
+      add(8, 'High hire rate', `${jobData.hireRate}% of posts lead to a hire`);
     } else if (jobData.hireRate < 30 && jobData.hireRate > 0) {
-      score -= 10; // Low hire rate red flag
+      add(-10, 'Low hire rate', `Only ${jobData.hireRate}% of posts lead to a hire — likely time-waster`);
     }
 
     // 5. Geolocation Match (+10%)
     const userLocs = this.settings.locations || [];
-    const locationMatched = userLocs.length > 0 && userLocs.some(loc => 
+    const locationMatched = userLocs.length > 0 && userLocs.some(loc =>
         jobData.location.toLowerCase().includes(loc.toLowerCase())
     );
     if (locationMatched) {
-      score += 10;
+      add(10, 'Preferred region', `Client in your preferred region (${jobData.location})`);
     }
 
     // 6. Red Flags (Auto-Penalty)
     const blacklist = this.settings.blacklistedLocations || [];
-    const isBlacklisted = blacklist.some(loc => 
+    const isBlacklisted = blacklist.some(loc =>
         jobData.location.toLowerCase().includes(loc.toLowerCase())
     );
-    if (isBlacklisted) score -= 30; // Heavy penalty for blacklisted locations
+    if (isBlacklisted) add(-30, 'Blacklisted region', `${jobData.location} is on your blacklist`);
 
-    if (jobData.proposals === '50+') score -= 25; // Saturated job penalty
-    else if (jobData.proposals === '20 to 50') score -= 10;
+    if (jobData.proposals === '50+') add(-25, 'Saturated (50+ proposals)', 'You would be bidding against 50+ others');
+    else if (jobData.proposals === '20 to 50') add(-10, 'Competitive (20-50 proposals)', 'Crowded proposal pool');
 
     // 7. Success Multiplier (Freelancer Mention & History)
     if (jobData.freelancerMentioned) {
-      score += 20; 
+      add(20, 'Prior collaboration signal', 'Client history references a profile like yours');
     }
 
     // Recency Momentum
-    score += this.calculateRecencyAlpha(jobData.lastViewed);
-    
+    const recency = this.calculateRecencyAlpha(jobData.lastViewed);
+    if (recency > 0) add(recency, 'Active client', `Recently active (${jobData.lastViewed})`);
+    else if (recency < 0) add(recency, 'Stale intent', `Not viewed recently (${jobData.lastViewed})`);
+
     // Ghost Detection (Unanswered Invites Penalty)
     if (parseInt(jobData.unanswered) > 10 && parseInt(jobData.interviewing) === 0) {
-        score -= 20;
+        add(-20, 'Possible ghost job', `${jobData.unanswered} unanswered invites, 0 interviews`);
     }
 
     // 8. Deep Intelligence Boosts (God View)
-    if (jobData.avgRating && parseFloat(jobData.avgRating) >= 4.5) score += 5;
+    if (jobData.avgRating && parseFloat(jobData.avgRating) >= 4.5) add(5, 'Well-rated client', `${jobData.avgRating}★ average rating`);
     if (jobData.avgRatePaid) {
       const avgPaid = parseFloat(jobData.avgRatePaid.replace(/[^0-9.]/g, ''));
-      if (avgPaid >= this.settings.hourlyRateMin) score += 10;
+      if (avgPaid >= this.settings.hourlyRateMin) add(10, 'Pays well historically', `Avg paid ${jobData.avgRatePaid}/hr`);
     }
 
     const finalScore = Math.max(0, Math.min(Math.round(score), 100));
 
     // Calculate precise skills gap
-    const missingMandatory = (jobData.mandatorySkills || []).filter(s => 
+    const missingMandatory = (jobData.mandatorySkills || []).filter(s =>
         !profileKeywords.some(p => p.includes(s.toLowerCase()) || s.toLowerCase().includes(p))
     );
 
@@ -182,7 +202,8 @@ class JobScorer {
       highCompetition: jobData.proposals === '50+',
       freelancerMentioned: jobData.freelancerMentioned,
       paymentVerified: jobData.paymentVerified,
-      recencyAlpha: this.calculateRecencyAlpha(jobData.lastViewed),
+      recencyAlpha: recency,
+      contributions,
       advice: this.generateAlphaAdvice(finalScore, jobData, locationMatched, Array.from(uniqueMatches))
     };
   }
@@ -527,7 +548,7 @@ class UpworkEngine {
     
     const jobData = this.extractJobData(tile);
     const result = this.scorer.calculateScore(jobData);
-    this.injectBadge(tile, result.total, jobData, result.matches);
+    this.injectBadge(tile, result, jobData);
   }
 
   detectAndSaveProfileFromNav() {
@@ -609,6 +630,21 @@ class UpworkEngine {
     const skills = Array.from(skillsEls).map(el => el.textContent.trim()).filter(s => s);
     const title = titleEl?.textContent.trim() || '';
 
+    // Fail loudly rather than silently saving an empty Expertise Matrix when
+    // Upwork's profile layout has shifted and our selectors matched nothing.
+    if (!profileName && rate === 0 && skills.length === 0 && !title) {
+      if (btn) {
+        btn.innerHTML = "⚠️ Couldn't read profile — Upwork layout may have changed";
+        btn.style.background = '#dc2626';
+        setTimeout(() => {
+          btn.innerHTML = '⚡ Sync MY Intelligence';
+          btn.style.background = '';
+        }, 4000);
+      }
+      log('syncProfile aborted: no profile data extracted');
+      return;
+    }
+
     const keywordPool = new Set([...skills, ...title.split(' ').filter(w => w.length > 3)]);
 
     try {
@@ -668,7 +704,7 @@ class UpworkEngine {
       const jobData = this.extractJobData(tile);
       if (jobData.title && jobData.title !== "Untitled Job") {
         const result = this.scorer.calculateScore(jobData);
-        this.injectBadge(tile, result.total, jobData, result.matches);
+        this.injectBadge(tile, result, jobData);
         tile.dataset.matchProcessed = 'true';
         if (result.total >= (this.scorer.settings.minScoreToNotify || 85)) {
            this.notifyHighMatch(jobData, result.total);
@@ -758,16 +794,24 @@ class UpworkEngine {
     };
   }
 
-  injectBadge(tile, score, jobData, matches = []) {
-    const result = this.scorer.calculateScore(jobData);
+  injectBadge(tile, result, jobData) {
+    const score = result.total;
+    const matches = result.matches || [];
     const badge = document.createElement('div');
     badge.className = 'match-intelligence-badge premium';
-    
+
     let color = '#ef4444';
     if (score >= 60) color = '#f59e0b';
     if (score >= 80) color = '#10b981';
 
-    const matchedTags = matches.slice(0, 4).map(m => `<span class="mi-tag">${m}</span>`).join('');
+    // "Don't waste Connects" warning — surfaced when concrete red flags exist.
+    const skipReasons = this.buildSkipReasons(result, jobData);
+    const hardBlocker = !jobData.paymentVerified || (result.missingMandatory && result.missingMandatory.length > 0) || result.isBlacklisted;
+    const skipHtml = (skipReasons.length > 0 && (score < 65 || hardBlocker)) ? `
+          <div class="mi-skip-warning">
+            <span class="mi-skip-title">⚠️ Likely Connect-waster — verify before bidding</span>
+            <ul class="mi-skip-list">${skipReasons.map(r => `<li>${r}</li>`).join('')}</ul>
+          </div>` : '';
 
     // Prepare Flags
     let flagsHtml = '';
@@ -793,7 +837,8 @@ class UpworkEngine {
              <div class="mi-verdict-label" style="background: ${color}">${this.getVerdictTitle(score)}</div>
              <div class="mi-verdict-message">${result.advice.message}</div>
           </div>
-          
+          ${skipHtml}
+
           <div class="mi-dossier-grid">
             ${this.scorer.settings.profileSummary?.title ? `
             <div class="mi-dossier-item">
@@ -834,6 +879,8 @@ class UpworkEngine {
             </div>` : ''}
           </div>
 
+          ${this.buildBreakdownHtml(result.contributions)}
+
           <div class="mi-intel-footer" style="${(result.matches.length === 0 && !jobData.connectsRequired) ? 'display:none' : ''}">
             <div class="mi-detail-chips">
                  ${jobData.connectsRequired ? `<span class="mi-chip gold">${jobData.connectsRequired} CONNECTS</span>` : ''}
@@ -862,7 +909,7 @@ class UpworkEngine {
     if (saveBtn) {
         saveBtn.onclick = (e) => {
           e.preventDefault(); e.stopPropagation();
-          this.saveJob(jobData);
+          this.saveJob(jobData, result);
           e.currentTarget.style.color = '#10b981';
           e.currentTarget.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17L4 12"/></svg>';
         };
@@ -881,17 +928,52 @@ class UpworkEngine {
     if (score >= threshold) tile.classList.add('mi-high-match-v2');
   }
 
-  async saveJob(jobData) {
+  async saveJob(jobData, result = {}) {
     if (!chrome.runtime?.id) return;
     try {
         const { savedJobs = [] } = await chrome.storage.local.get("savedJobs");
         if (chrome.runtime?.id && !savedJobs.some((j) => j.link === jobData.link)) {
-            savedJobs.push({ ...jobData, savedAt: new Date().toISOString() });
+            savedJobs.push({
+              ...jobData,
+              score: (result.total !== undefined ? result.total : null),
+              verdict: (result.total !== undefined ? this.getVerdictTitle(result.total) : null),
+              contributions: result.contributions || [],
+              advice: result.advice?.message || null,
+              savedAt: new Date().toISOString()
+            });
             await chrome.storage.local.set({ savedJobs });
         }
     } catch (e) {
         log('Context lost in saveJob');
     }
+  }
+
+  // Concrete reasons a job is likely to waste Connects — drives the inline
+  // "verify before bidding" warning and keeps the tool honest about junk.
+  buildSkipReasons(result, jobData) {
+    const reasons = [];
+    if (!jobData.paymentVerified) reasons.push('Payment method unverified');
+    if (jobData.hireRate !== null && jobData.hireRate < 30 && jobData.hireRate > 0) reasons.push(`Low hire rate (${jobData.hireRate}%)`);
+    if (jobData.proposals === '50+') reasons.push('Over-saturated (50+ proposals)');
+    if (result.missingMandatory && result.missingMandatory.length > 0) reasons.push(`Missing required skills: ${result.missingMandatory.join(', ')}`);
+    if (parseInt(jobData.unanswered) > 10 && parseInt(jobData.interviewing) === 0) reasons.push('Possible ghost job (unanswered invites)');
+    if (result.isBlacklisted) reasons.push('Blacklisted region');
+    return reasons;
+  }
+
+  // Collapsible, signed "why this score" list, sorted by impact.
+  buildBreakdownHtml(contributions) {
+    const items = (contributions || []).filter(c => c.delta !== 0)
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    if (items.length === 0) return '';
+    const rows = items.map(c => {
+      const pos = c.delta > 0;
+      return `<div class="mi-bd-row">
+          <span class="mi-bd-delta ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${Math.round(c.delta)}</span>
+          <span class="mi-bd-text"><strong>${c.label}</strong><span class="mi-bd-reason">${c.reason}</span></span>
+        </div>`;
+    }).join('');
+    return `<details class="mi-breakdown"><summary>Why this score?</summary><div class="mi-bd-body">${rows}</div></details>`;
   }
 
   getVerdictTitle(score) {
@@ -912,37 +994,32 @@ class UpworkEngine {
       return 'NEW OPPORTUNITY';
   }
 
-  notifyHighMatch(jobData, score) {
+  // Notify once per job, and remember it across page reloads/sessions so the
+  // same job never re-alerts. Entries older than 7 days are pruned.
+  async notifyHighMatch(jobData, score) {
     if (!chrome.runtime?.id) return;
+    if (!jobData.link) return;
     if (this.processedJobs.has(jobData.link)) return;
     this.processedJobs.add(jobData.link);
-    chrome.runtime.sendMessage({ type: "NOTIFY_HIGH_MATCH", jobData, score });
-  }
-
-  getFullActivityStatus(jobData) {
-      const parts = [];
-      const interview = parseInt(jobData.interviewing || 0);
-      const invites = parseInt(jobData.invites || 0);
-      const unanswered = parseInt(jobData.unanswered || 0);
-      const proposals = jobData.proposals || "0";
-      
-      parts.push(`📝 ${proposals.toUpperCase()}`);
-      if (interview > 0) parts.push(`🤝 ${interview} INT`);
-      if (invites > 0) parts.push(`📩 ${invites} INV`);
-      if (unanswered > 0) parts.push(`🚩 ${unanswered} GHOSTED`);
-      
-      return parts.length > 0 ? parts.join(' | ') : 'QUIET';
+    try {
+      const WEEK = 7 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const { notifiedJobs = {} } = await chrome.storage.local.get('notifiedJobs');
+      for (const k of Object.keys(notifiedJobs)) {
+        if (now - notifiedJobs[k] > WEEK) delete notifiedJobs[k];
+      }
+      if (notifiedJobs[jobData.link]) return; // Already alerted within the window
+      notifiedJobs[jobData.link] = now;
+      if (!chrome.runtime?.id) return;
+      await chrome.storage.local.set({ notifiedJobs });
+      chrome.runtime.sendMessage({ type: "NOTIFY_HIGH_MATCH", jobData, score });
+    } catch (e) {
+      log('Context lost in notifyHighMatch');
+    }
   }
 
   hasClientDossier(jobData) {
       return jobData.jobsPosted || jobData.totalHires || jobData.totalHours || jobData.avgRatePaid;
-  }
-
-  getProposalTypeLine(jobData) {
-      if (jobData.type === 'Hourly') {
-          return jobData.rateMax ? `$${jobData.rateMin}-$${jobData.rateMax}/HR` : `$${jobData.rateMin}/HR`;
-      }
-      return jobData.budget ? `$${jobData.budget} FIXED` : 'FIXED-PRICE';
   }
 
   getClientDossierLine(jobData) {

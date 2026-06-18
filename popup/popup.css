@@ -395,3 +395,107 @@ input:focus, textarea:focus, select:focus {
     color: var(--text-light);
     font-size: 13px;
 }
+
+.empty-state .icon {
+    font-size: 28px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* v1.1 — parse hints, validation, reset, tracker controls & breakdown */
+.parse-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.parse-hint.error {
+    color: var(--danger);
+}
+
+input.field-error,
+textarea.field-error {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+.text-link-btn.danger {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.text-link-btn.danger:hover {
+    text-decoration: underline;
+}
+
+.remove-job-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 6px;
+}
+
+.remove-job-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+}
+
+/* Tracker "why this score" breakdown */
+details.bd {
+    margin: 8px 0 4px;
+}
+
+details.bd summary {
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    list-style: none;
+}
+
+details.bd summary::-webkit-details-marker {
+    display: none;
+}
+
+.bd-body {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bd-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.bd-delta {
+    flex: 0 0 34px;
+    text-align: right;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.bd-delta.pos { color: var(--success); }
+.bd-delta.neg { color: var(--danger); }
+
+.bd-label {
+    color: var(--text-main);
+    font-weight: 600;
+}
