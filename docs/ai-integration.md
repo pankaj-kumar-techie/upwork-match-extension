@@ -1,47 +1,52 @@
-# 🧠 Cognitive Layer: AI & LLM Integration Guide
+# 🧠 AI Integration Guide
 
-The **Upwork Match Intelligence** extension is evolving to include a cognitive layer. This guide explains how to integrate and use the AI features.
+The **AI Deep Dive** is an **optional** layer. UMI's heuristic scoring works fully without it and with no
+API key. When you enable AI, UMI calls your chosen provider **directly from your browser**, using **your**
+key — there is no UMI server in the path.
 
-## 🤖 Supported Models
+## Supported models
 
-| Engine                    | Recommendation    | Best For                                         |
-| :------------------------ | :---------------- | :----------------------------------------------- |
-| **Google Gemini-1.5-Pro** | ⭐ High (Default) | Context-rich job analysis and creative drafting. |
-| **OpenAI GPT-4o**         | High              | Precise logic and direct instruction following.  |
-| **Base Engine**           | Balanced          | Fast, local heuristic scoring without API costs. |
+| Provider | Model used | Best for |
+| :------- | :--------- | :------- |
+| **Google Gemini** | `gemini-1.5-flash` | Fast, low-cost job analysis and drafting. |
+| **OpenAI** | `gpt-4o-mini` | Precise instruction-following. |
+| **Heuristics only** | — (no API) | Fully local scoring, zero API cost. |
 
-## 🔄 Cognitive Data Flow
+> Model IDs are defined in `background.js` (`callGemini` / `callOpenAI`). Update them there if you want a
+> different model.
+
+## Data flow
 
 ```mermaid
 graph TD
-    A[Job Scraper] -->|Job Details| B(Data Context)
-    C[Profile Sync] -->|Freelancer DNA| B
-    B -->|Encrypted Payload| D{LLM Engine}
-    E[API Key Store] -->|Auth| D
-    D -->|Alpha Insights| F[Strategic UI Panel]
-    F -->|Cover Letter| G[User Connects]
+    A[Job telemetry from the card] -->|+ profile summary| B(background.js)
+    K[Your API key — chrome.storage.local] -->|auth| B
+    B -->|direct HTTPS call| D{Gemini / OpenAI}
+    D -->|JSON: score, strategy, pitch, red flags| F[Strategic Panel]
 ```
 
-## ⚙️ Setup Instructions
+## Setup
 
-1. **Obtain API Keys**:
-   - For Gemini: [Google AI Studio](https://aistudio.google.com/).
-   - For OpenAI: [OpenAI Platform](https://platform.openai.com/).
-2. **Configure Popup**:
-   - Open the **Match Intel** popup.
-   - Scroll to **AI Intelligence (LLM Configuration)**.
-   - Select your preferred model and paste your key.
-3. **Usage**:
-   - Once configured, the **Strategic Panel** on Upwork will begin offering "Alpha Insights"—generated summaries of why a job is a perfect match and drafting personalized intros for your cover letters.
+1. **Get an API key**
+   - Gemini: [Google AI Studio](https://aistudio.google.com/)
+   - OpenAI: [OpenAI Platform](https://platform.openai.com/)
+2. **Configure the popup** — open **Match Intel** → Strategic Config → **Core Intelligence Hub**. Choose
+   your model and paste your key. Click **Deploy Configurations**.
+3. **Use it** — on a high-scoring job card, click the **circle/info icon** on the UMI badge. The advice
+   strip shows "Consultant is analyzing…", then reveals a revised score, **Winning Strategy**,
+   **Pitch Hook**, and any **red flags**.
 
-## 🛡️ Security & Privacy
+## What the AI returns
 
-- **Local Persistence**: Your API keys are stored in `chrome.storage.sync` which is encrypted and only accessible by your Chrome instance.
-- **Zero-Logging**: We do not store your profile data or API keys on external servers. All AI calls happen directly from your browser background script to the provider.
-- **Cost Management**: The extension uses a "Debounced Token Strategy" to minimize API calls, ensuring jobs are only analyzed when you specifically choose to view them deeply.
+A strict JSON object: `revisedScore`, `alphaInsight`, `winningStrategy`, `pitchHook`, and `redFlags[]`.
+The prompt instructs the model to be brutally honest and to *lower* the score for time-wasters — the goal
+is to save your time, not to hype every job.
 
-## 🗺️ Roadmap: Future AI Features
+## 🛡️ Privacy & cost
 
-- **Semantic Auto-Correction**: The AI will suggest better keywords for your "Intel Pool" based on success rates.
-- **Tone-Matching**: Adjust the cover letter draft to match the client's communication style detected in their job post.
-- **Multi-Model Chaining**: Use Gemini for research and GPT for final formatting.
+- **Key storage:** your API key lives in `chrome.storage.local` — **on this device only, never
+  cloud-synced**, and only ever sent to the provider you selected. (Older versions stored it in synced
+  storage; re-saving in the popup migrates it to local.)
+- **No third-party server:** calls go browser → provider. UMI logs nothing externally.
+- **On-demand only:** AI runs only when you click the Deep Dive button on a specific job — never
+  automatically — so you control every token spent.

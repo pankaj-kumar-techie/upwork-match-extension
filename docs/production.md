@@ -1,55 +1,69 @@
-# 📄 Production & Strategic Deployment Guide
+# 📄 Setup & Deployment Guide
 
-This guide ensures the **Upwork Match Intelligence** system is deployed with MNC-grade precision and reliability.
+How to install, calibrate, and get the most out of Upwork Match Intelligence (UMI).
 
-## 📦 Deployment Workflow
+## Deployment workflow
 
 ```mermaid
 graph LR
-    A[Install Extension] --> B[Navigate to Upwork]
-    B --> C[Open Your Profile]
-    C --> D[Click 'Sync MY Intelligence']
-    D --> E[Calibrate Thresholds in Popup]
-    E --> F[Enable Auto-Reload / Webhooks]
-    F --> G[Start Strategic Monitoring]
+    A[Load Unpacked] --> B[Open your Upwork profile]
+    B --> C[Click 'Sync MY Intelligence']
+    C --> D[Calibrate thresholds in popup]
+    D --> E[Optional: AI key + webhook]
+    E --> F[Browse the feed — cards score as they render]
 ```
 
-### 1. Installation
+## 1. Installation
 
-- Open Chrome and navigate to `chrome://extensions/`.
-- Enable **Developer Mode**.
+- Open `chrome://extensions/` and enable **Developer Mode**.
 - Click **Load Unpacked** and select the extension root directory.
+- Pin the **Match Intel** icon.
 
-### 2. Semantic Calibration (Critical)
+## 2. Calibration (critical)
 
 The engine is only as smart as the data it has.
 
-- **Profile Sync**: Go to your freelancer profile page. The "Sync MY Intelligence" button will appear. Clicking this parses your entire career history into the **Intel Pool**.
-- **Keyword Tuning**: Open the extension popup. Review the extracted keywords. Add any "High-Alpha" technical terms (e.g., `Generative AI`, `System Architecture`) that represent your highest-paying work.
+- **Profile sync** — paste your public profile URL in the popup and click **Begin High-Alpha Sync**, or
+  visit your profile and click **⚡ Sync MY Intelligence**. This parses your skills, title, and rate into
+  the **Expertise Matrix**.
+- **Keyword tuning** — open the popup and review the extracted keywords. Add high-value terms that
+  represent your best-paying work (e.g. `Generative AI`, `System Architecture`). The live hint shows how
+  many keywords were parsed.
 
-## 🛠️ Configuration Strategy
+## 3. Configuration strategy
 
-| Strategic Setting    | Best Practice                                                                        |
-| :------------------- | :----------------------------------------------------------------------------------- |
-| **Alpha Threshold**  | Set to **85%** for premium filtering; **75%** for volume discovery.                  |
-| **Auto-Reload**      | Set to **3-5 minutes** to ensure you are among the first 10 applicants.              |
-| **Market Filtering** | Use the "Red Flag" list to block regions with historically low pay or high friction. |
-| **Webhook Hub**      | Connect a Discord channel to see jobs even when you're away from your desk.          |
+| Setting | Suggested practice |
+| :------ | :----------------- |
+| **Notify Threshold** | 85 for premium filtering; 75 for broader discovery. |
+| **Blacklisted Zones** | Block regions with historically low pay or poor fit. |
+| **AI Model** | Leave on *Heuristics Only* to start; add a key only if you want Deep Dives. |
+| **Webhook** | Optional: mirror high-match alerts to Discord/Telegram. |
 
-## 🚀 Performance Benchmarks
+## 4. About unattended monitoring
 
-To maintain a premium experience, the engine adheres to these constraints:
+UMI scores jobs **only while the feed is open in your browser**. It intentionally does **not**
+auto-refresh the feed or fetch jobs in the background — that would cross into the scraping/automation
+Upwork's Terms prohibit. For genuine 24/7 alerts:
 
-- **DOM Stability**: Uses non-destructive injection to avoid breaking Upwork's native UI.
-- **API Safety**: Does not hit Upwork APIs directly; uses human-simulated scraping to avoid detection.
-- **Memory Optimization**: Auto-cleans job cache every 3 hours to maintain low memory usage.
+- Use Upwork's own **free saved-search email alerts** as your radar, and let UMI score jobs when you open
+  them, **or**
+- See [RADAR_ROADMAP.md](RADAR_ROADMAP.md) for the official-API backend design (not part of this
+  extension).
 
-## 🧪 Quality Assurance
+## Behavior guarantees
 
-For a step-by-step verification of all systems, please refer to the **[Manual Testing & Verification Guide](TESTING_GUIDE.md)**.
+- **Non-destructive injection** — UMI prepends its own panels; Upwork's native UI is untouched.
+- **No direct Upwork API calls / no scraping** — UMI reads only the page you're viewing.
+- **De-duplicated alerts** — a job won't re-notify on reload (7-day memory in local storage).
 
-## 🔍 Maintenance & Monitoring
+## Quality assurance
 
-- **Updates**: When Upwork changes their UI, check the `docs/architecture.md` for updated selector strategies.
-- **Log Inspection**: Open the console (`F12`) on Upwork to see the `[MatchIntel]` diagnostic logs.
-- **Intel Refresh**: Re-sync your profile (via the "⚡ Sync MY Intelligence" button) whenever you add a new major project or skill to your Upwork profile.
+For step-by-step verification of every feature, see the
+**[Manual Testing Guide](TESTING_GUIDE.md)**.
+
+## Maintenance
+
+- **Upwork UI changes** — if scores stop appearing, Upwork likely changed its markup; check selector
+  strategy in [architecture.md](architecture.md) and `content/content.js`.
+- **Diagnostics** — open DevTools (`F12`) on Upwork to see `[MatchIntel]` console logs.
+- **Re-sync** — re-run profile sync after adding a major skill or project to your Upwork profile.

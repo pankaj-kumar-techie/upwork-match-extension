@@ -1,37 +1,41 @@
-# 🚀 Strategic Product Roadmap: Upwork Match Intelligence
+# 🚀 Product Roadmap
 
-Our mission is to evolve from a "Job Scorer" to a **Full-Cycle Alpha Agent**. This roadmap highlights the primary integration phases.
+UMI's mission: be the **private, honest bidding assistant** that helps serious freelancers spend Connects
+only on jobs worth winning — without ever risking their account.
 
-## 🟢 PHASE 1: Data Mastery (Current)
+## 🟢 Shipped (v1.1)
 
-- ✅ **Deep Scraper v3**: Background activity and client dossiers.
-- ✅ **Strategic Panel**: High-density UI for job cards.
-- ✅ **Profile Sync**: One-click intelligence calibration.
-- ✅ **Auto-Reload**: Autonomous feed refreshing.
+- ✅ **On-page match scoring** — every job card scored as it renders.
+- ✅ **Explainable scoring** — "Why this score?" breakdown on every card and in the Tracker.
+- ✅ **Connect-waster warnings** — concrete red flags surfaced before you bid.
+- ✅ **One-click Profile Sync** — builds your Expertise Matrix (fails loudly if the layout changes).
+- ✅ **Activity enrichment** — reads the job detail panel you open into the score.
+- ✅ **Desktop notifications** — de-duplicated across reloads (7-day memory).
+- ✅ **Optional AI Deep Dive** — Gemini/OpenAI revised score, strategy, and pitch from your own key.
+- ✅ **Local Tracker** — bookmark, view, and remove saved jobs.
+- ✅ **Privacy hardening** — API key kept device-local; clear privacy messaging.
 
-## 🟡 PHASE 2: Cognitive Integration (NEXT)
+## 🟡 Next
 
-- 🏗️ **LLM Model Support**: Direct integration with Gemini and OpenAI for job analysis.
-- 🏗️ **Proposal Architect**: Auto-drafting cover letters using job-specific "Alpha Data".
-- 🏗️ **Smart Summarizer**: Bullet-point reduction of long, messy job descriptions.
+- 🏗️ **Shared scorer module** — extract `JobScorer` so it can be reused outside the content script.
+- 🏗️ **Smart summarizer** — bullet-point reduction of long, messy job descriptions (local-first).
+- 🏗️ **Keyword suggestions** — propose Expertise Matrix additions based on the jobs you bookmark.
+- 🏗️ **Tone-matched pitch drafts** — adapt the AI pitch hook to the client's writing style.
 
-## 🔵 PHASE 3: Workflow Automation
+## 🔵 Exploring
 
-- **Auto-Bid Pilot**: Pre-fill application forms based on match score.
-- **Client Intent Analyzer**: Sentiment analysis on client reviews to detect "Micro-Managers" vs "High-Trust" clients.
-- **Velocity Tracker**: Real-time proposal speed analytics to detect "Hot Posts".
+- **Contract risk scanner** — flag predatory terms or unrealistic scope in job text.
+- **Client intent signals** — surface micro-manager vs. high-trust patterns from visible reviews.
+- **24/7 radar (separate backend)** — official-API-based unattended alerts. Designed in
+  [RADAR_ROADMAP.md](RADAR_ROADMAP.md); **not** built into the extension because safe 24/7 monitoring
+  can't live in a browser tab.
 
-## 🔴 PHASE 4: Professional Network
+## 🚫 Explicitly out of scope
 
-- **Collaboration Mode**: Shared intelligence pool for agencies.
-- **Contract Risk Scanner**: Scans job posts for predatory legal terms or unrealistic scope.
+To keep UMI ToS-safe and account-safe, we will **not** build:
 
----
+- Auto-submitting proposals or pre-filling/sending applications (Upwork prohibits auto-apply).
+- Background fetching, scraping, or auto-refreshing the feed.
+- Any tool that acts on Upwork on your behalf without a human clicking send.
 
-## 🛠️ Upcoming: AI Intelligence Module
-
-We are currently building the foundation for Phase 2. The next update will include:
-
-1. **Model Selection**: Choose between `Gemini-1.5-Pro`, `GPT-4o`, or `Local LLM`.
-2. **Key Store**: Secure local storage for API keys.
-3. **Context Injection**: Feed job intel + your profile bio directly into the model for "Winning Logic" generation.
+UMI assists the human; the human always decides and submits.

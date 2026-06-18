@@ -17,7 +17,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleAIRequest(jobData, profileSummary) {
     const { settings = {} } = await chrome.storage.sync.get('settings');
     const model = settings.aiModel;
-    const apiKey = settings.aiKey;
+    // The API key is kept in local storage (never cloud-synced) for privacy.
+    // Fall back to the legacy synced location for users who haven't re-saved yet.
+    const { aiKey: localKey } = await chrome.storage.local.get('aiKey');
+    const apiKey = localKey || settings.aiKey;
 
     if (!model || model === 'none' || !apiKey) {
         throw new Error('AI Model or API Key not configured in popup.');

@@ -1,51 +1,60 @@
 # 🧪 Manual Testing & Verification Guide
 
-Follow these steps to ensure Upwork Match Intelligence (UMI) is correctly configured and providing accurate telemetry.
+There is no automated test suite — verification is manual, the norm for an unpacked MV3 extension. Work
+through the phases below after loading the extension at `chrome://extensions/`.
 
-## Phase 1: Engine Calibration (Sync)
+## Phase 0: Load
 
-1.  **Open Upwork**: Navigate to your [Freelancer Profile page](https://www.upwork.com/freelancers/~).
-2.  **Trigger Sync**: Click the blue **"⚡ Sync MY Intelligence"** button injected at the top of your profile.
-3.  **Verify Extraction**:
-    - The button should change to "✅ [X] Data Points Synced!".
-    - Open the extension popup (top right browser icon).
-    - Go to the **Settings** tab.
-    - Confirm the **Expertise Matrix** (Keywords) contains your skills.
-    - Confirm **$/hr Min** and **Target** are populated.
+- Load Unpacked → confirm the extension loads with **no manifest or service-worker errors**.
 
-## Phase 2: Feed Intelligence (Scanning)
+## Phase 1: Profile sync
 
-1.  **Navigate to Feed**: Go to [Find Work / Most Recent](https://www.upwork.com/nx/find-work/most-recent).
-2.  **Observe Injections**:
-    - Every job tile should now have an **ALPHA** badge on the left.
-    - High-quality matches should have an **Emerald Glow** (border).
-3.  **Data Verification**:
-    - Check the **Competition Heat** label. Does it match the proposals count shown by Upwork?
-    - Check **Skills Alignment**. Does it highlight skills you actually possess?
-    - Check **Missing Mandatory Skills**. Find a job you aren't qualified for and verify if the red warnings appear.
+1. Open your [Upwork profile](https://www.upwork.com/freelancers/~).
+2. Click **⚡ Sync MY Intelligence** (or use the popup's **Begin High-Alpha Sync** with your profile URL).
+3. Verify:
+   - The button shows **"✅ [X] Data Points Synced!"**.
+   - Popup → Settings → **Expertise Matrix** is populated; `$/hr` floor & target are filled.
+4. **Failure path:** if Upwork's layout has changed and nothing extracts, the button should show
+   **"⚠️ Couldn't read profile — Upwork layout may have changed"** rather than saving empty data.
+5. **Onboarding guard:** with the profile URL blank, clicking Sync should focus the URL field and show a
+   hint — it must **not** open a dead tab.
 
-## Phase 3: AI Deep Dive (Cognitive Analysis)
+## Phase 2: Feed scoring & explainability
 
-1.  **Configure API**: In the popup Settings, select your **AI Model** (Gemini or OpenAI) and paste your **API Key**.
-2.  **Trigger AI**:
-    - Find a job with a high score (>85%).
-    - Click the **Circle/Info icon** in the top right of the UMI badge.
-3.  **Verify Insight**:
-    - The Advice strip should change to "Consultant is analyzing...".
-    - After 3-5 seconds, a purple **Strategic Verdict** and **Pitch Hook** should appear.
-    - Verify that the "Winning Strategy" reflects the actual job text.
+1. Go to [Find Work → Most Recent](https://www.upwork.com/nx/find-work/most-recent).
+2. Verify each job tile gets a score badge; strong matches get an emerald border.
+3. Click **"Why this score?"** on a card → confirm a signed (+/−) breakdown with reasons appears.
+4. Find a weak/risky job → confirm the **"⚠️ Likely Connect-waster"** block lists concrete reasons
+   (unverified payment, low hire rate, 50+ proposals, missing required skills, etc.).
+5. Open a job's **detail panel** → reopen the feed card and confirm activity (interviews/invites/last
+   viewed) and mandatory skills are now reflected.
 
-## Phase 4: Automation & Persistence
+## Phase 3: AI Deep Dive (optional)
 
-1.  **Tracker Consistency**:
-    - Click the **Bookmark/Save icon** on any UMI badge.
-    - Open the popup and go to the **Tracker** tab.
-    - Confirm the job appears with its score and metadata.
-2.  **Notification Test**:
-    - Keep Upwork open in a background tab.
-    - Wait for a "Prime" match to appear.
-    - Verify if a Chrome system notification appears with the job title.
+1. Popup → set **AI Model** + paste your **API key** → Deploy.
+2. On a high-scoring job, click the **circle/info icon** on the badge.
+3. Verify "Consultant is analyzing…" then a revised score, **Winning Strategy**, **Pitch Hook**, and any
+   red flags appear, reflecting the actual job text.
+
+## Phase 4: Notifications & dedup
+
+1. Set a low **Notify Threshold** so matches trigger easily.
+2. Confirm a **desktop notification** fires for a qualifying job (click it → the job opens).
+3. **Reload the page** → confirm the **same job does NOT re-notify** (cross-session dedup).
+
+## Phase 5: Tracker
+
+1. Click the **bookmark icon** on a card.
+2. Popup → **Tracker** tab → confirm the job appears **with its score and "Why this score?" breakdown**.
+3. Click **✕ Remove** → it disappears and stays gone after reopening the popup.
+
+## Phase 6: Privacy & settings
+
+1. Save settings with a valid API key.
+2. DevTools → **Application → Storage**: confirm `aiKey` is in **chrome.storage.local**, *not* in the
+   synced `settings` object.
+3. Click **Reset all settings** → confirm fields clear and tracked jobs are removed.
 
 ---
 
-_If any phase fails, check the Browser Console (F12 > Console) for [MatchIntel] logs._
+_If any phase fails, open DevTools (`F12 → Console`) on Upwork and check the `[MatchIntel]` logs._
